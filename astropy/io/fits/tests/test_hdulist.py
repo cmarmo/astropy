@@ -594,6 +594,19 @@ class TestHDUListFunctions(FitsTestCase):
         assert len(hdul) == 1
         assert str(hdul[0].header) == str(hdu.header)
 
+    def test_open_file_with_bad_file_padding(self):
+        """
+        Test warning when opening files with extra padding at the end.
+        """
+
+        with pytest.warns(
+            AstropyUserWarning,
+            match='Unexpected extra padding at the end of the file.'
+            ) as w:
+                f = fits.open('/home/cmarmo/software/test/astropy/PerA_12coFCRAO_F_xyv.fits')
+                f.close()
+                assert len(w) == 1
+
     def test_update_with_truncated_header(self):
         """
         Regression test for https://aeon.stsci.edu/ssb/trac/pyfits/ticket/148
