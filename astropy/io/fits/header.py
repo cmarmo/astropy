@@ -606,7 +606,7 @@ class Header:
             if not is_binary:
                 block = encode_ascii(block)
 
-        if not end_found and is_eof and endcard: #and is_header:
+        if not end_found and is_eof and endcard and is_header:
                 # TODO: Pass this error to validation framework as an ERROR,
                 # rather than raising an exception
                 raise OSError('Header missing END card.')
