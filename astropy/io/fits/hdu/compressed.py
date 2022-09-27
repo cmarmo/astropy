@@ -1563,15 +1563,11 @@ class CompImageHDU(BinTableHDU):
             image_header.set('PCOUNT', self._header['ZPCOUNT'],
                              self._header.comments['ZPCOUNT'],
                              after=last_naxis)
-        else:
-            image_header.set('PCOUNT', 0, after=last_naxis)
 
         if 'ZGCOUNT' in self._header:
             image_header.set('GCOUNT', self._header['ZGCOUNT'],
                              self._header.comments['ZGCOUNT'],
                              after='PCOUNT')
-        else:
-            image_header.set('GCOUNT', 1, after='PCOUNT')
 
         if 'ZEXTEND' in self._header:
             image_header.set('EXTEND', self._header['ZEXTEND'],
