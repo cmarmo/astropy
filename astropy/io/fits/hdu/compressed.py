@@ -1562,7 +1562,7 @@ class CompImageHDU(BinTableHDU):
             image_header.set('XTENSION', 'IMAGE', before=0)
 
         image_header.set('BITPIX', self._header['ZBITPIX'],
-                         self._header.comments['ZBITPIX'], before=1)            
+                         self._header.comments['ZBITPIX'], before=1)
 
         image_header.set('NAXIS', self._header['ZNAXIS'],
                          self._header.comments['ZNAXIS'], before=2)
