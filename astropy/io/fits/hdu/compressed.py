@@ -1190,6 +1190,8 @@ class CompImageHDU(BinTableHDU):
             zval = 'ZVAL' + str(idx)
             del self._header[zname]
             del self._header[zval]
+            del self._image_header[zname]
+            del self._image_header[zval]
 
         # Finally, put the appropriate keywords back based on the
         # compression type.
@@ -1437,6 +1439,37 @@ class CompImageHDU(BinTableHDU):
             raise TypeError('CompImageHDU data has incorrect type:{}; '
                             'dtype.fields = {}'.format(
                     type(data), data.dtype.fields))
+        if 'data' in self.__dict__ and self.__dict__['data'] is not None:
+            if self.__dict__['data'] is data:
+                return
+            else:
+                self._data_replaced = True
+            was_unsigned = _is_pseudo_integer(self.__dict__['data'].dtype)
+        else:
+            self._data_replaced = True
+            was_unsigned = False
+
+        self.__dict__['data'] = data
+        self._modified = True
+
+        if self.data is None:
+            self._axes = []
+        else:
+            # Set new values of bitpix, bzero, and bscale now, but wait to
+            # revise original values until header is updated.
+            self._update_header_data(self.header)
+            self.header = self._image_header
+            to_remove =  COMPRESSION_KEYWORDS.union({'ZGCOUNT', 'ZPCOUNT'})
+            for key in to_remove:
+                if key in self._image_header:
+                    del self._image_header[key]
+
+        if (data is not None and was_unsigned):
+            self._update_header_scale_info(data.dtype)
+
+        # returning the data signals to lazyproperty that we've already handled
+        # setting self.__dict__['data']
+        return data
 
     @lazyproperty
     def compressed_data(self):
@@ -1529,7 +1562,7 @@ class CompImageHDU(BinTableHDU):
             image_header.set('XTENSION', 'IMAGE', before=0)
 
         image_header.set('BITPIX', self._header['ZBITPIX'],
-                         self._header.comments['ZBITPIX'], before=1)
+                         self._header.comments['ZBITPIX'], before=1)            
 
         image_header.set('NAXIS', self._header['ZNAXIS'],
                          self._header.comments['ZNAXIS'], before=2)
