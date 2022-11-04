@@ -111,11 +111,11 @@ class CompImageHeader(Header):
             return super().__new__(cls)
 
     def __init__(self, table_header, image_header):
-        self._cards = image_header._cards
-        self._keyword_indices = image_header._keyword_indices
-        self._rvkc_indices = image_header._rvkc_indices
-        self._modified = image_header._modified
-        self._table_header = table_header
+        self._cards = table_header._cards
+        self._keyword_indices = table_header._keyword_indices
+        self._rvkc_indices = table_header._rvkc_indices
+        self._modified = table_header._modified
+        self._table_header = image_header
 
     # We need to override and Header methods that can modify the header, and
     # ensure that they sync with the underlying _table_header
@@ -389,7 +389,7 @@ class CompImageHeader(Header):
 
 # TODO: Fix this class so that it doesn't actually inherit from BinTableHDU,
 # but instead has an internal BinTableHDU reference
-class CompImageHDU(BinTableHDU):
+class CompImageHDU(ImageHDU):
     """
     Compressed Image HDU class.
     """
@@ -810,10 +810,9 @@ class CompImageHDU(BinTableHDU):
         # Clean up EXTNAME duplicates
         self._remove_unnecessary_default_extnames(self._header)
 
-        image_hdu = ImageHDU(data=self.data, header=self._header)
-        self._image_header = CompImageHeader(self._header, image_hdu.header)
-        self._axes = image_hdu._axes
-        del image_hdu
+        table_hdu = BinTableHDU(data=self.data, header=self._header)
+        self._table_header = CompImageHeader(table_hdu.header, self._header)
+        del table_hdu
 
         # Determine based on the size of the input data whether to use the Q
         # column format to store compressed data or the P format.
@@ -830,12 +829,14 @@ class CompImageHDU(BinTableHDU):
             huge_hdu = False
 
         # Update the extension name in the table header
-        if not name and 'EXTNAME' not in self._header:
+        
+        if not name and 'EXTNAME' not in self._table_header:
             # Do not sync this with the image header since the default
             # name is specific to the table header.
             self._header.set('EXTNAME', self._default_name,
                              'name of this binary table extension',
                              after='TFIELDS')
+            print("table header ",self._table_header)
         elif name:
             # Force the name into table and image headers.
             self.name = name
@@ -908,7 +909,7 @@ class CompImageHDU(BinTableHDU):
         # Create the additional columns required for floating point
         # data and calculate the width of the output table.
 
-        zbitpix = self._image_header['BITPIX']
+        zbitpix = self._table_header['BITPIX']
 
         if zbitpix < 0 and quantize_level != 0.0:
             # floating point image has 'COMPRESSED_DATA',
@@ -988,12 +989,12 @@ class CompImageHDU(BinTableHDU):
         self._header.set('NAXIS1', cols.dtype.itemsize,
                          'width of table in bytes')
         self._header.set('TFIELDS', ncols, 'number of fields in each row',
-                         after='GCOUNT')
+                         after='TFIELDS')
         self._header.set('ZIMAGE', True, 'extension contains compressed image',
                          after=after)
         self._header.set('ZBITPIX', zbitpix,
                          bitpix_comment, after='ZIMAGE')
-        self._header.set('ZNAXIS', self._image_header['NAXIS'], naxis_comment,
+        self._header.set('ZNAXIS', self._table_header['NAXIS'], naxis_comment,
                          after='ZBITPIX')
 
         # Strip the table header of all the ZNAZISn and ZTILEn keywords
@@ -1009,7 +1010,7 @@ class CompImageHDU(BinTableHDU):
         # Verify that any input tile size parameter is the appropriate
         # size to match the HDU's data.
 
-        naxis = self._image_header['NAXIS']
+        naxis = self._table_header['NAXIS']
 
         if not tile_size:
             tile_size = []
@@ -1021,8 +1022,8 @@ class CompImageHDU(BinTableHDU):
         # Set default tile dimensions for HCOMPRESS_1
 
         if compression_type == 'HCOMPRESS_1':
-            if (self._image_header['NAXIS1'] < 4 or
-                    self._image_header['NAXIS2'] < 4):
+            if (self._table_header['NAXIS1'] < 4 or
+                    self._table_header['NAXIS2'] < 4):
                 raise ValueError('Hcompress minimum image dimension is '
                                  '4 pixels')
             elif tile_size:
@@ -1039,8 +1040,8 @@ class CompImageHDU(BinTableHDU):
 
             if tile_size and (tile_size[0] == 0 and tile_size[1] == 0):
                 # compress the whole image as a single tile
-                tile_size[0] = self._image_header['NAXIS1']
-                tile_size[1] = self._image_header['NAXIS2']
+                tile_size[0] = self._table_header['NAXIS1']
+                tile_size[1] = self._table_header['NAXIS2']
 
                 for i in range(2, naxis):
                     # set all higher tile dimensions = 1
@@ -1059,13 +1060,13 @@ class CompImageHDU(BinTableHDU):
                 # least 4 rows.
 
                 # 1st tile dimension is the row length of the image
-                tile_size.append(self._image_header['NAXIS1'])
+                tile_size.append(self._table_header['NAXIS1'])
 
-                if self._image_header['NAXIS2'] <= 30:
-                    tile_size.append(self._image_header['NAXIS1'])
+                if self._table_header['NAXIS2'] <= 30:
+                    tile_size.append(self._table_header['NAXIS1'])
                 else:
                     # look for another good tile dimension
-                    naxis2 = self._image_header['NAXIS2']
+                    naxis2 = self._table_header['NAXIS2']
                     for dim in [16, 24, 20, 30, 28, 26, 22, 18, 14]:
                         if naxis2 % dim == 0 or naxis2 % dim > 3:
                             tile_size.append(dim)
@@ -1080,23 +1081,23 @@ class CompImageHDU(BinTableHDU):
             # check if requested tile size causes the last tile to have
             # less than 4 pixels
 
-            remain = self._image_header['NAXIS1'] % tile_size[0]  # 1st dimen
+            remain = self._table_header['NAXIS1'] % tile_size[0]  # 1st dimen
 
             if remain > 0 and remain < 4:
                 tile_size[0] += 1  # try increasing tile size by 1
 
-                remain = self._image_header['NAXIS1'] % tile_size[0]
+                remain = self._table_header['NAXIS1'] % tile_size[0]
 
                 if remain > 0 and remain < 4:
                     raise ValueError('Last tile along 1st dimension has '
                                      'less than 4 pixels')
 
-            remain = self._image_header['NAXIS2'] % tile_size[1]  # 2nd dimen
+            remain = self._table_header['NAXIS2'] % tile_size[1]  # 2nd dimen
 
             if remain > 0 and remain < 4:
                 tile_size[1] += 1  # try increasing tile size by 1
 
-                remain = self._image_header['NAXIS2'] % tile_size[1]
+                remain = self._table_header['NAXIS2'] % tile_size[1]
 
                 if remain > 0 and remain < 4:
                     raise ValueError('Last tile along 2nd dimension has '
@@ -1105,7 +1106,7 @@ class CompImageHDU(BinTableHDU):
         # Set up locations for writing the next cards in the header.
         last_znaxis = 'ZNAXIS'
 
-        if self._image_header['NAXIS'] > 0:
+        if self._table_header['NAXIS'] > 0:
             after1 = 'ZNAXIS1'
         else:
             after1 = 'ZNAXIS'
@@ -1125,7 +1126,7 @@ class CompImageHDU(BinTableHDU):
                 if ztile not in self._header:
                     # Default tile size
                     if not idx:
-                        ts = self._image_header['NAXIS1']
+                        ts = self._table_header['NAXIS1']
                     else:
                         ts = 1
                 else:
@@ -1235,7 +1236,7 @@ class CompImageHDU(BinTableHDU):
             after_keyword = 'ZVAL2'
             idx = 3
 
-        if self._image_header['BITPIX'] < 0:   # floating point image
+        if self._table_header['BITPIX'] < 0:   # floating point image
             self._header.set('ZNAME' + str(idx), 'NOISEBIT',
                              'floating point quantization level',
                              after=after_keyword)
@@ -1357,22 +1358,22 @@ class CompImageHDU(BinTableHDU):
             # Since we only handle compressed IMAGEs, ZTENSION should
             # always be IMAGE, even if the caller has passed in a header
             # for some other type of extension.
-            if 'XTENSION' in self._image_header:
+            if 'XTENSION' in self._table_header:
                 self._header.set('ZTENSION', 'IMAGE',
-                                 self._image_header.comments['XTENSION'],
+                                 self._table_header.comments['XTENSION'],
                                  before='ZBITPIX')
 
             # Move PCOUNT and GCOUNT cards from image header to the table
             # header as ZPCOUNT and ZGCOUNT cards.
 
-            if 'PCOUNT' in self._image_header:
-                self._header.set('ZPCOUNT', self._image_header['PCOUNT'],
-                                 self._image_header.comments['PCOUNT'],
+            if 'PCOUNT' in self._table_header:
+                self._header.set('ZPCOUNT', self._table_header['PCOUNT'],
+                                 self._table_header.comments['PCOUNT'],
                                  after=last_znaxis)
 
-            if 'GCOUNT' in self._image_header:
-                self._header.set('ZGCOUNT', self._image_header['GCOUNT'],
-                                 self._image_header.comments['GCOUNT'],
+            if 'GCOUNT' in self._table_header:
+                self._header.set('ZGCOUNT', self._table_header['GCOUNT'],
+                                 self._table_header.comments['GCOUNT'],
                                  after='ZPCOUNT')
 
         # When we have an image checksum we need to ensure that the same
@@ -1381,12 +1382,12 @@ class CompImageHDU(BinTableHDU):
         # over to the image header when the hdu is uncompressed.
 
         if 'ZHECKSUM' in self._header:
-            required_blanks = image_header._countblanks()
-            image_blanks = self._image_header._countblanks()
+            required_blanks = table_header._countblanks()
+            image_blanks = self._table_header._countblanks()
             table_blanks = self._header._countblanks()
 
             for _ in range(required_blanks - image_blanks):
-                self._image_header.append()
+                self._table_header.append()
                 table_blanks += 1
 
             for _ in range(required_blanks - table_blanks):
