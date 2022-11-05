@@ -802,9 +802,6 @@ class CompImageHDU(ImageHDU):
 
         table_hdu = BinTableHDU()
         self._table_header = table_hdu.header
-        self._table_header._keyword_indices = table_hdu.header._keyword_indices
-        self._table_header._rvkc_indices = table_hdu.header._rvkc_indices
-        self._table_header._modified = table_hdu.header._modified
         del table_hdu
 
 
@@ -835,6 +832,7 @@ class CompImageHDU(ImageHDU):
 
         # Set the compression type in the table header.
         if compression_type:
+            print("uno passo qui")
             if compression_type not in COMPRESSION_TYPES:
                 warnings.warn(
                     'Unknown compression type provided (supported are {}). '
@@ -844,14 +842,15 @@ class CompImageHDU(ImageHDU):
                     AstropyUserWarning)
                 compression_type = DEFAULT_COMPRESSION_TYPE
 
-            print("passo qui")
             self._table_header.set('ZCMPTYPE', compression_type,
                              'compression algorithm', after='TFIELDS')
         else:
+            print("oppure passo qui", self._table_header)
             compression_type = self._table_header.get('ZCMPTYPE',
                                                 DEFAULT_COMPRESSION_TYPE)
             compression_type = CMTYPE_ALIASES.get(compression_type,
                                                   compression_type)
+
 
         # If the input image header had BSCALE/BZERO cards, then insert
         # them in the table header.
@@ -882,6 +881,7 @@ class CompImageHDU(ImageHDU):
 
         self._table_header.set('TTYPE1', 'COMPRESSED_DATA', 'label for field 1',
                          after='TFIELDS')
+
 
         # Set the data format for the first column.  It is dependent
         # on the requested compression type.
@@ -1158,12 +1158,12 @@ class CompImageHDU(ImageHDU):
         # value.
         for idx in itertools.count(1):
             zname = 'ZNAME' + str(idx)
-            if zname not in self._header:
+            if zname not in self._table_header:
                 break
             zval = 'ZVAL' + str(idx)
             if self._table_header[zname] == 'NOISEBIT':
                 if quantize_level is None:
-                    quantize_level = self._header[zval]
+                    quantize_level = self._table_header[zval]
             if self._table_header[zname] == 'SCALE   ':
                 if hcomp_scale is None:
                     hcomp_scale = self._table_header[zval]
@@ -1404,8 +1404,8 @@ class CompImageHDU(ImageHDU):
             if 'ZBLANK' in self.compressed_data.columns.names:
                 zblank = self.compressed_data['ZBLANK']
             else:
-                if 'ZBLANK' in self._header:
-                    zblank = np.array(self._header['ZBLANK'], dtype='int32')
+                if 'ZBLANK' in self._table_header:
+                    zblank = np.array(self._table_header['ZBLANK'], dtype='int32')
                 elif 'BLANK' in self._header:
                     zblank = np.array(self._header['BLANK'], dtype='int32')
 
@@ -1552,12 +1552,12 @@ class CompImageHDU(ImageHDU):
                 self.data = self.data.byteswap(False)
 
         try:
-            nrows = self._header['NAXIS2']
-            tbsize = self._header['NAXIS1'] * nrows
+            nrows = self._table_header['NAXIS2']
+            tbsize = self._table_header['NAXIS1'] * nrows
 
-            self._header['PCOUNT'] = 0
-            if 'THEAP' in self._header:
-                del self._header['THEAP']
+            self._table_header['PCOUNT'] = 0
+            if 'THEAP' in self._table_header:
+                del self._table_header['THEAP']
             self._theap = tbsize
 
             # First delete the original compressed data, if it exists
@@ -1595,7 +1595,7 @@ class CompImageHDU(ImageHDU):
         Scale image data by using ``BSCALE`` and ``BZERO``.
 
         Calling this method will scale ``self.data`` and update the keywords of
-        ``BSCALE`` and ``BZERO`` in ``self._header`` and ``self._image_header``.
+        ``BSCALE`` and ``BZERO`` in ``self._header`` and ``self._table_header``.
         This method should only be used right before writing to the output
         file, as the data will be scaled and is therefore not very usable after
         the call.
@@ -1716,12 +1716,12 @@ class CompImageHDU(ImageHDU):
             if 'CHECKSUM' in image_hdu.header:
                 # This will also pass through to the ZHECKSUM keyword and
                 # ZDATASUM keyword
-                self._image_header.set('CHECKSUM',
-                                       image_hdu.header['CHECKSUM'],
-                                       image_hdu.header.comments['CHECKSUM'])
+                self._header.set('CHECKSUM',
+                                 image_hdu.header['CHECKSUM'],
+                                 image_hdu.header.comments['CHECKSUM'])
             if 'DATASUM' in image_hdu.header:
-                self._image_header.set('DATASUM', image_hdu.header['DATASUM'],
-                                       image_hdu.header.comments['DATASUM'])
+                self._header.set('DATASUM', image_hdu.header['DATASUM'],
+                                 image_hdu.header.comments['DATASUM'])
             # Store a temporary backup of self.data in a different attribute;
             # see below
             self._imagedata = self.data
@@ -1826,8 +1826,8 @@ class CompImageHDU(ImageHDU):
 
         if seed == DITHER_SEED_CHECKSUM:
             # Determine the tile dimensions from the ZTILEn keywords
-            naxis = self._header['ZNAXIS']
-            tile_dims = [self._header[f'ZTILE{idx + 1}']
+            naxis = self._table_header['ZNAXIS']
+            tile_dims = [self._table_header[f'ZTILE{idx + 1}']
                          for idx in range(naxis)]
             tile_dims.reverse()
 
