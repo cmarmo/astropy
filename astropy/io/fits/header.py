@@ -977,10 +977,8 @@ class Header:
                 self._relativeinsert(card, before=before, after=after,
                                      replace=True)
         elif before is not None or after is not None:
-            print(keyword, value, comment)
             self._relativeinsert((keyword, value, comment), before=before,
                                  after=after)
-            print("dopo inserzione ", self)
         else:
             self[keyword] = (value, comment)
 
@@ -1794,25 +1792,20 @@ class Header:
         If replace=True, move an existing card with the same keyword.
         """
 
-        print("Self insert! ", self)
         if before is None:
             insertionkey = after
         else:
             insertionkey = before
-        print("insertionkey ", insertionkey)
 
         def get_insertion_idx():
-            if insertionkey in self:
-                if not (isinstance(insertionkey, numbers.Integral) and
-                        insertionkey >= len(self._cards)):
-                    idx = self._cardindex(insertionkey)
-                else:
-                    idx = insertionkey
-
-                if before is None:
-                    idx += 1
+            if not (isinstance(insertionkey, numbers.Integral) and
+                    insertionkey >= len(self._cards)):
+                idx = self._cardindex(insertionkey)
             else:
-                idx = len(self._cards)
+                idx = insertionkey
+
+            if before is None:
+                idx += 1
 
             return idx
 
@@ -1841,7 +1834,6 @@ class Header:
         # Even if replace=True, the insertion idx may have changed since the
         # old card was deleted
         idx = get_insertion_idx()
-        print("idx ", idx)
 
         if card[0] in Card._commentary_keywords:
             cards = reversed(self._splitcommentary(card[0], card[1]))
