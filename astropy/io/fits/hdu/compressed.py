@@ -800,9 +800,11 @@ class CompImageHDU(ImageHDU):
         # Clean up EXTNAME duplicates
         self._remove_unnecessary_default_extnames(self._header)
 
-        print(type(self.data))
         table_hdu = BinTableHDU()
         self._table_header = table_hdu.header
+        self._table_header._keyword_indices = table_hdu.header._keyword_indices
+        self._table_header._rvkc_indices = table_hdu.header._rvkc_indices
+        self._table_header._modified = table_hdu.header._modified
         del table_hdu
 
 
@@ -842,6 +844,7 @@ class CompImageHDU(ImageHDU):
                     AstropyUserWarning)
                 compression_type = DEFAULT_COMPRESSION_TYPE
 
+            print("passo qui")
             self._table_header.set('ZCMPTYPE', compression_type,
                              'compression algorithm', after='TFIELDS')
         else:
