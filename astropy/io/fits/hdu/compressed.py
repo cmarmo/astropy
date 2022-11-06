@@ -832,7 +832,6 @@ class CompImageHDU(ImageHDU):
 
         # Set the compression type in the table header.
         if compression_type:
-            print("uno passo qui")
             if compression_type not in COMPRESSION_TYPES:
                 warnings.warn(
                     'Unknown compression type provided (supported are {}). '
@@ -845,12 +844,13 @@ class CompImageHDU(ImageHDU):
             self._table_header.set('ZCMPTYPE', compression_type,
                              'compression algorithm', after='TFIELDS')
         else:
-            print("oppure passo qui", self._table_header)
             compression_type = self._table_header.get('ZCMPTYPE',
                                                 DEFAULT_COMPRESSION_TYPE)
             compression_type = CMTYPE_ALIASES.get(compression_type,
                                                   compression_type)
-
+            if 'ZCMPTYPE' not in self._table_header:
+                self._table_header.set('ZCMPTYPE', compression_type,
+                             'compression algorithm', after='TFIELDS')
 
         # If the input image header had BSCALE/BZERO cards, then insert
         # them in the table header.

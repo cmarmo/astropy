@@ -757,7 +757,7 @@ void init_output_buffer(PyObject* hdu, void** buf, size_t* bufsize) {
     unsigned long maxtilelen = 1;
     int idx;
 
-    header = PyObject_GetAttrString(hdu, "_header");
+    header = PyObject_GetAttrString(hdu, "_table_header");
     if (header == NULL) {
         return;
     }
@@ -889,7 +889,7 @@ void open_from_hdu(fitsfile** fileptr, void** buf, size_t* bufsize,
     long long heapsize;
     long long theap;
 
-    header = PyObject_GetAttrString(hdu, "_header");
+    header = PyObject_GetAttrString(hdu, "_table_header");
     if (header == NULL) {
         goto fail;
     }
