@@ -1172,8 +1172,7 @@ class CompImageHDU(ImageHDU):
     def compressed_data(self):
         # First we will get the table data (the compressed
         # data) from the file, if there is any.
-        compressed_data = self.compressed_data
-        print(compressed_data)
+        compressed_data = self.data
         if isinstance(compressed_data, np.rec.recarray):
             # Make sure not to use 'del self.data' so we don't accidentally
             # go through the self.data.fdel and close the mmap underlying
@@ -1480,6 +1479,7 @@ class CompImageHDU(ImageHDU):
         """
 
         try:
+            print(self.data.shape)
             return super()._writedata(fileobj)
         finally:
             # Restore the .data attribute to its rightful value (if any)
