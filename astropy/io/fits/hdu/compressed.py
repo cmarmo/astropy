@@ -303,7 +303,10 @@ class CompImageHDU(ImageHDU):
 
         compression_type = CMTYPE_ALIASES.get(compression_type, compression_type)
 
-        super().__init__(data=data, header=header)
+        super().__init__(
+            data=data, header=header, name=name,
+            do_not_scale_image_data=do_not_scale_image_data, uint=uint,
+            scale_back=scale_back)
 
         # Create the table header (_table_header) to the compressed
         # image format and to match the input data (if any);
@@ -773,7 +776,7 @@ class CompImageHDU(ImageHDU):
             if tile_size and len(tile_size) >= idx + 1:
                 ts = tile_size[idx]
             else:
-                if ztile not in self._header:
+                if ztile not in self._table_header:
                     # Default tile size
                     if not idx:
                         ts = self._header['NAXIS1']
@@ -1008,22 +1011,22 @@ class CompImageHDU(ImageHDU):
             # Since we only handle compressed IMAGEs, ZTENSION should
             # always be IMAGE, even if the caller has passed in a header
             # for some other type of extension.
-            if 'XTENSION' in self._image_header:
+            if 'XTENSION' in self._header:
                 self._table_header.set('ZTENSION', 'IMAGE',
-                                 self._image_header.comments['XTENSION'],
+                                 self._header.comments['XTENSION'],
                                  before='ZBITPIX')
 
             # Move PCOUNT and GCOUNT cards from image header to the table
             # header as ZPCOUNT and ZGCOUNT cards.
 
-            if 'PCOUNT' in self._image_header:
+            if 'PCOUNT' in self._header:
                 self._table_header.set('ZPCOUNT', self._image_header['PCOUNT'],
-                                 self._image_header.comments['PCOUNT'],
+                                 self._header.comments['PCOUNT'],
                                  after=last_znaxis)
 
-            if 'GCOUNT' in self._image_header:
-                self._table_header.set('ZGCOUNT', self._image_header['GCOUNT'],
-                                 self._image_header.comments['GCOUNT'],
+            if 'GCOUNT' in self._header:
+                self._table_header.set('ZGCOUNT', self._header['GCOUNT'],
+                                 self._header.comments['GCOUNT'],
                                  after='ZPCOUNT')
 
         # When we have an image checksum we need to ensure that the same
@@ -1099,17 +1102,78 @@ class CompImageHDU(ImageHDU):
 
     @data.setter
     def data(self, data):
-        if (data is not None) and (not isinstance(data, np.ndarray) or
-                data.dtype.fields is not None):
-            raise TypeError('CompImageHDU data has incorrect type:{}; '
-                            'dtype.fields = {}'.format(
-                    type(data), data.dtype.fields))
+        
+        if 'data' in self.__dict__ and self.__dict__['data'] is not None:
+            if self.__dict__['data'] is data:
+                return
+            else:
+                self._data_replaced = True
+            was_unsigned = _is_pseudo_integer(self.__dict__['data'].dtype)
+        else:
+            self._data_replaced = True
+            was_unsigned = False
+
+        if (data is not None
+                and not isinstance(data, np.ndarray)
+                and not _is_dask_array(data)):
+            # Try to coerce the data into a numpy array--this will work, on
+            # some level, for most objects
+            try:
+                data = np.array(data)
+            except Exception:
+                raise TypeError('data object {!r} could not be coerced into an '
+                                'ndarray'.format(data))
+
+            if data.shape == ():
+                raise TypeError('data object {!r} should have at least one '
+                                'dimension'.format(data))
+
+        self.__dict__['data'] = data
+        self._modified = True
+
+        if self.data is None:
+            self._axes = []
+        else:
+            # Set new values of bitpix, bzero, and bscale now, but wait to
+            # revise original values until header is updated.
+            self._bitpix = DTYPE2BITPIX[data.dtype.name]
+            self._bscale = 1
+            self._bzero = 0
+            self._blank = None
+            self._axes = list(data.shape)
+            self._axes.reverse()
+
+        # Update the header, including adding BZERO/BSCALE if new data is
+        # unsigned. Does not change the values of self._bitpix,
+        # self._orig_bitpix, etc.
+        super().update_header()
+        self._update_header_data(self._header)
+        if (data is not None and was_unsigned):
+            self._update_header_scale_info(data.dtype)
+
+        # Keep _orig_bitpix as it was until header update is done, then
+        # set it, to allow easier handling of the case of unsigned
+        # integer data being converted to something else. Setting these here
+        # is needed only for the case do_not_scale_image_data=True when
+        # setting the data to unsigned int.
+
+        # If necessary during initialization, i.e. if BSCALE and BZERO were
+        # not in the header but the data was unsigned, the attributes below
+        # will be update in __init__.
+        self._orig_bitpix = self._bitpix
+        self._orig_bscale = self._bscale
+        self._orig_bzero = self._bzero
+
+        # returning the data signals to lazyproperty that we've already handled
+        # setting self.__dict__['data']
+        return data
 
     @lazyproperty
     def compressed_data(self):
         # First we will get the table data (the compressed
         # data) from the file, if there is any.
-        compressed_data = super().data
+        compressed_data = self.compressed_data
+        print(compressed_data)
         if isinstance(compressed_data, np.rec.recarray):
             # Make sure not to use 'del self.data' so we don't accidentally
             # go through the self.data.fdel and close the mmap underlying
@@ -1381,11 +1445,11 @@ class CompImageHDU(ImageHDU):
             # to compute the image checksum
             image_hdu = ImageHDU(data=self.data, header=self.header)
             image_hdu._update_checksum(checksum)
-            if 'CHECKSUM' in image_hdu.header:
+            if 'CHECKSUM' in self.header:
                 # This will also pass through to the ZHECKSUM keyword and
                 # ZDATASUM keyword
                 self._header.set('CHECKSUM',
-                                 image_hdu.header['CHECKSUM'],
+                                 self.header['CHECKSUM'],
                                  image_hdu.header.comments['CHECKSUM'])
             if 'DATASUM' in image_hdu.header:
                 self._header.set('DATASUM', image_hdu.header['DATASUM'],
@@ -1403,11 +1467,10 @@ class CompImageHDU(ImageHDU):
 
     def _writeheader(self, fileobj):
         """
-        Bypasses `BinTableHDU._writeheader()` which updates the header with
-        metadata about the data that is meaningless here; another reason
-        why this class maybe shouldn't inherit directly from BinTableHDU...
+        Set the header as the compressed table header
         """
 
+        self._header = self._table_header
         return ExtensionHDU._writeheader(self, fileobj)
 
     def _writedata(self, fileobj):
