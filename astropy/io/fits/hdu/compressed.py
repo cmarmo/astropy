@@ -308,6 +308,13 @@ class CompImageHDU(ImageHDU):
             do_not_scale_image_data=do_not_scale_image_data, uint=uint,
             scale_back=scale_back)
 
+        _image_header = Header(self.header)
+        self._cards = _image_header._cards
+        self._keyword_indices = _image_header._keyword_indices
+        self._rvkc_indices = _image_header._rvkc_indices
+        self.header = _image_header
+        del _image_header
+
         # Create the table header (_table_header) to the compressed
         # image format and to match the input data (if any);
         # Update the image header (_header) to match the input data (if any)
@@ -457,8 +464,6 @@ class CompImageHDU(ImageHDU):
             DITHER_SEED_CHECKSUM (-1)
         """
 
-        # Clean up EXTNAME duplicates
-        self._remove_unnecessary_default_extnames(self._header)
         # Update image header
         super().update_header()
 
@@ -466,6 +471,8 @@ class CompImageHDU(ImageHDU):
         self._table_header = table_hdu.header
         del table_hdu
 
+        # Clean up EXTNAME duplicates
+        self._remove_unnecessary_default_extnames(image_header)
 
         # Determine based on the size of the input data whether to use the Q
         # column format to store compressed data or the P format.
