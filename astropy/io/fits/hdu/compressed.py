@@ -1479,7 +1479,6 @@ class CompImageHDU(ImageHDU):
         """
 
         try:
-            print(self.data.shape)
             return super()._writedata(fileobj)
         finally:
             # Restore the .data attribute to its rightful value (if any)

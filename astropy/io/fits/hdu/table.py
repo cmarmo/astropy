@@ -882,7 +882,8 @@ class BinTableHDU(_TableBaseHDU):
         if isinstance(xtension, str):
             xtension = xtension.rstrip()
         return (card.keyword == 'XTENSION' and
-                xtension in (cls._extension, 'A3DTABLE'))
+                xtension in (cls._extension, 'A3DTABLE') and 
+                not xtension in (cls._extension, 'ZIMAGE'))
 
     def _calculate_datasum_with_heap(self):
         """
