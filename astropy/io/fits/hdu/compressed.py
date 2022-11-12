@@ -303,32 +303,45 @@ class CompImageHDU(ImageHDU):
 
         compression_type = CMTYPE_ALIASES.get(compression_type, compression_type)
 
-        super().__init__(
-            data=data, header=header, name=name,
-            do_not_scale_image_data=do_not_scale_image_data, uint=uint,
-            scale_back=scale_back)
+        if data is DELAYED:
+            # Reading the HDU from a file
+            super().__init__(
+                data=data, header=header, name=name,
+                do_not_scale_image_data=do_not_scale_image_data, uint=uint,
+                scale_back=scale_back)
+            self._table_header = Header(self.header)
+            _image_header = ImageHDU().header
+            self._header = _image_header
+        else:
+            table_hdu = BinTableHDU()
+            self._table_header = table_hdu.header
+            del table_hdu
+            super().__init__(
+                data=data, header=header, name=name,
+                do_not_scale_image_data=do_not_scale_image_data, uint=uint,
+                scale_back=scale_back)
+            _image_header = Header(self.header)
 
-        _image_header = Header(self.header)
-        self._cards = _image_header._cards
-        self._keyword_indices = _image_header._keyword_indices
-        self._rvkc_indices = _image_header._rvkc_indices
-        self.header = _image_header
-        del _image_header
+            self._cards = _image_header._cards
+            self._keyword_indices = _image_header._keyword_indices
+            self._rvkc_indices = _image_header._rvkc_indices
+            self.header = _image_header
+            del _image_header
 
-        # Create the table header (_table_header) to the compressed
-        # image format and to match the input data (if any);
-        # Update the image header (_header) to match the input data (if any)
-        # from the input image header (self.header);
-        # Create the initially empty table data array to
-        # hold the compressed data.
-        self._update_header_data(self.header, name,
-                                 compression_type=compression_type,
-                                 tile_size=tile_size,
-                                 hcomp_scale=hcomp_scale,
-                                 hcomp_smooth=hcomp_smooth,
-                                 quantize_level=quantize_level,
-                                 quantize_method=quantize_method,
-                                 dither_seed=dither_seed)
+            # Update or create the table header (_table_header) to the compressed
+            # image format and to match the input data (if any);
+            # Update the image header (_header) to match the input data (if any)
+            # from the input image header (self.header);
+            # Create the initially empty table data array to
+            # hold the compressed data.
+            self._update_header_data(self.header, name,
+                                     compression_type=compression_type,
+                                     tile_size=tile_size,
+                                     hcomp_scale=hcomp_scale,
+                                     hcomp_smooth=hcomp_smooth,
+                                     quantize_level=quantize_level,
+                                     quantize_method=quantize_method,
+                                     dither_seed=dither_seed)
 
     def _remove_unnecessary_default_extnames(self, header):
         """Remove default EXTNAME values if they are unnecessary.
@@ -464,13 +477,10 @@ class CompImageHDU(ImageHDU):
             DITHER_SEED_CHECKSUM (-1)
         """
 
+        print("table header\n", self._table_header)
+        print("image_header\n", self._header)
         # Update image header
         super().update_header()
-
-        table_hdu = BinTableHDU()
-        self._table_header = table_hdu.header
-        del table_hdu
-
         # Clean up EXTNAME duplicates
         self._remove_unnecessary_default_extnames(image_header)
 
