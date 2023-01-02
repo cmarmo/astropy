@@ -1530,6 +1530,16 @@ class ColDefs(NotifierMixin):
             ftype = array.dtype.fields[cname][0]
             format = self._col_format_cls.from_recformat(ftype)
 
+            if ftype.kind == "O":
+                dtypes = {np.array(array[cname][i]).dtype for i in range(len(array))}
+                if len(dtypes) > 1:
+                    raise ValueError
+                ftype = dtypes.pop()
+                format = self._col_format_cls.from_recformat(ftype)
+                format = f"P{format}()"
+            else:
+                format = self._col_format_cls.from_recformat(ftype)
+
             # Determine the appropriate dimensions for items in the column
             dim = array.dtype[idx].shape[::-1]
             if dim and (len(dim) > 0 or "A" in format):
@@ -2445,52 +2455,42 @@ def _convert_record2fits(format):
     Convert record format spec to FITS format spec.
     """
     recformat, kind, dtype = _dtype_to_recformat(format)
+    shape = dtype.shape
+    itemsize = dtype.base.itemsize
+    if dtype.char == "U" or (
+        dtype.subdtype is not None and dtype.subdtype[0].char == "U"
+    ):
+        # Unicode dtype--itemsize is 4 times actual ASCII character length,
+        # which what matters for FITS column formats
+        # Use dtype.base and dtype.subdtype --dtype for multi-dimensional items
+        itemsize = itemsize // 4
+
+    option = str(itemsize)
+
+    ndims = len(shape)
     repeat = 1
-    if dtype == "O":
-        # First guess 32bit P descriptor with float arrays
-        warnings.warn(
-            "Format {} cannot be mapped to the a specific "
-            "TFORMn keyword values. 32bit P descriptor with "
-            "float arrays VLA format is guessed.".format(dtype),
-            AstropyUserWarning,
-        )
-        output_format = "PD()"
-    else:
-        shape = dtype.shape
-        itemsize = dtype.base.itemsize
-        if dtype.char == "U" or (
-            dtype.subdtype is not None and dtype.subdtype[0].char == "U"
-        ):
-            # Unicode dtype--itemsize is 4 times actual ASCII character length,
-            # which what matters for FITS column formats
-            # Use dtype.base and dtype.subdtype --dtype for multi-dimensional items
-            itemsize = itemsize // 4
+    if ndims > 0:
+        nel = np.array(shape, dtype="i8").prod()
+        if nel > 1:
+            repeat = nel
 
-        option = str(itemsize)
+    if kind == "a":
+        # This is a kludge that will place string arrays into a
+        # single field, so at least we won't lose data.  Need to
+        # use a TDIM keyword to fix this, declaring as (slength,
+        # dim1, dim2, ...)  as mwrfits does
 
-        ndims = len(shape)
-        if ndims > 0:
-            nel = np.array(shape, dtype="i8").prod()
-            if nel > 1:
-                repeat = nel
+        ntot = int(repeat) * int(option)
 
-        if kind == "a":
-            # This is a kludge that will place string arrays into a
-            # single field, so at least we won't lose data.  Need to
-            # use a TDIM keyword to fix this, declaring as (slength,
-            # dim1, dim2, ...)  as mwrfits does
-
-            ntot = int(repeat) * int(option)
-
-            output_format = str(ntot) + "A"
-        elif recformat in NUMPY2FITS:  # record format
-            if repeat != 1:
-                repeat = str(repeat)
-            else:
-                repeat = ""
-            output_format = repeat + NUMPY2FITS[recformat]
+        output_format = str(ntot) + "A"
+    elif recformat in NUMPY2FITS:  # record format
+        if repeat != 1:
+            repeat = str(repeat)
         else:
-            raise ValueError(f"Illegal format `{format}`.")
+            repeat = ""
+        output_format = repeat + NUMPY2FITS[recformat]
+    else:
+        raise ValueError(f"Illegal format `{format}`.")
 
     return output_format
 
