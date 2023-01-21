@@ -15,24 +15,38 @@ from astropy.utils.exceptions import AstropyUserWarning
 from .core import FittableModel, ModelDefinitionError
 from .parameters import Parameter
 
-__all__ = ['Spline1D', 'SplineInterpolateFitter', 'SplineSmoothingFitter',
-           'SplineExactKnotsFitter', 'SplineSplrepFitter']
-__doctest_requires__ = {('Spline1D'): ['scipy']}
+__all__ = [
+    "Spline1D",
+    "SplineInterpolateFitter",
+    "SplineSmoothingFitter",
+    "SplineExactKnotsFitter",
+    "SplineSplrepFitter",
+]
+__doctest_requires__ = {"Spline1D": ["scipy"]}
 
 
 class _Spline(FittableModel):
-    """Base class for spline models"""
+    """Base class for spline models."""
+
     _knot_names = ()
     _coeff_names = ()
 
     optional_inputs = {}
 
-    def __init__(self, knots=None, coeffs=None, degree=None, bounds=None,
-                 n_models=None, model_set_axis=None, name=None, meta=None):
-
+    def __init__(
+        self,
+        knots=None,
+        coeffs=None,
+        degree=None,
+        bounds=None,
+        n_models=None,
+        model_set_axis=None,
+        name=None,
+        meta=None,
+    ):
         super().__init__(
-            n_models=n_models, model_set_axis=model_set_axis, name=name,
-            meta=meta)
+            n_models=n_models, model_set_axis=model_set_axis, name=name, meta=meta
+        )
 
         self._user_knots = False
         self._init_tck(degree)
@@ -43,7 +57,9 @@ class _Spline(FittableModel):
         if knots is not None:
             self._init_spline(knots, coeffs, bounds)
         elif coeffs is not None:
-            raise ValueError("If one passes a coeffs vector one needs to also pass knots!")
+            raise ValueError(
+                "If one passes a coeffs vector one needs to also pass knots!"
+            )
 
     @property
     def param_names(self):
@@ -51,37 +67,39 @@ class _Spline(FittableModel):
         Coefficient names generated based on the spline's degree and
         number of knots.
         """
-
         return tuple(list(self._knot_names) + list(self._coeff_names))
 
     @staticmethod
     def _optional_arg(arg):
-        return f'_{arg}'
+        return f"_{arg}"
 
     def _create_optional_inputs(self):
         for arg in self.optional_inputs:
             attribute = self._optional_arg(arg)
             if hasattr(self, attribute):
-                raise ValueError(f'Optional argument {arg} already exists in this class!')
+                raise ValueError(
+                    f"Optional argument {arg} already exists in this class!"
+                )
             else:
                 setattr(self, attribute, None)
 
     def _intercept_optional_inputs(self, **kwargs):
         new_kwargs = kwargs
         for arg in self.optional_inputs:
-            if (arg in kwargs):
+            if arg in kwargs:
                 attribute = self._optional_arg(arg)
                 if getattr(self, attribute) is None:
                     setattr(self, attribute, kwargs[arg])
                     del new_kwargs[arg]
                 else:
-                    raise RuntimeError(f'{arg} has already been set, something has gone wrong!')
+                    raise RuntimeError(
+                        f"{arg} has already been set, something has gone wrong!"
+                    )
 
         return new_kwargs
 
     def evaluate(self, *args, **kwargs):
-        """ Extract the optional kwargs passed to call """
-
+        """Extract the optional kwargs passed to call."""
         optional_inputs = kwargs
         for arg in self.optional_inputs:
             attribute = self._optional_arg(arg)
@@ -101,9 +119,8 @@ class _Spline(FittableModel):
 
     def __call__(self, *args, **kwargs):
         """
-        Make model callable to model evaluation
+        Make model callable to model evaluation.
         """
-
         # Hack to allow an optional model argument
         kwargs = self._intercept_optional_inputs(**kwargs)
 
@@ -124,7 +141,6 @@ class _Spline(FittableModel):
         fixed : optional, bool
             If the parameter should be fixed or not
         """
-
         # Hack to allow parameters and attribute array to freely exchange values
         #   _getter forces reading value from attribute array
         #   _setter forces setting value to attribute array
@@ -140,8 +156,9 @@ class _Spline(FittableModel):
         setter = functools.partial(_setter, index=index, attr=attr)
 
         default = getattr(self, attr)
-        param = Parameter(name=name, default=default[index], fixed=fixed,
-                          getter=getter, setter=setter)
+        param = Parameter(
+            name=name, default=default[index], fixed=fixed, getter=getter, setter=setter
+        )
         # setter/getter wrapper for parameters in this case require the
         # parameter to have a reference back to its parent model
         param.model = self
@@ -153,7 +170,7 @@ class _Spline(FittableModel):
     def _create_parameters(self, base_name: str, attr: str, fixed=False):
         """
         Create a spline parameters linked to an attribute array for all
-        elements in that array
+        elements in that array.
 
         Parameters
         ----------
@@ -201,7 +218,7 @@ class _Spline(FittableModel):
 
 class Spline1D(_Spline):
     """
-    One dimensional Spline Model
+    One dimensional Spline Model.
 
     Parameters
     ----------
@@ -274,50 +291,67 @@ class Spline1D(_Spline):
     n_outputs = 1
     _separable = True
 
-    optional_inputs = {'nu': 0}
+    optional_inputs = {"nu": 0}
 
-    def __init__(self, knots=None, coeffs=None, degree=3, bounds=None,
-                 n_models=None, model_set_axis=None, name=None, meta=None):
-
+    def __init__(
+        self,
+        knots=None,
+        coeffs=None,
+        degree=3,
+        bounds=None,
+        n_models=None,
+        model_set_axis=None,
+        name=None,
+        meta=None,
+    ):
         super().__init__(
-            knots=knots, coeffs=coeffs, degree=degree, bounds=bounds,
-            n_models=n_models, model_set_axis=model_set_axis, name=name, meta=meta
+            knots=knots,
+            coeffs=coeffs,
+            degree=degree,
+            bounds=bounds,
+            n_models=n_models,
+            model_set_axis=model_set_axis,
+            name=name,
+            meta=meta,
         )
 
     @property
     def t(self):
         """
-        The knots vector
+        The knots vector.
         """
-
         if self._t is None:
-            return np.concatenate((np.zeros(self._degree + 1), np.ones(self._degree + 1)))
+            return np.concatenate(
+                (np.zeros(self._degree + 1), np.ones(self._degree + 1))
+            )
         else:
             return self._t
 
     @t.setter
     def t(self, value):
         if self._t is None:
-            raise ValueError("The model parameters must be initialized before setting knots.")
+            raise ValueError(
+                "The model parameters must be initialized before setting knots."
+            )
         elif len(value) == len(self._t):
             self._t = value
         else:
-            raise ValueError("There must be exactly as many knots as previously defined.")
+            raise ValueError(
+                "There must be exactly as many knots as previously defined."
+            )
 
     @property
     def t_interior(self):
         """
-        The interior knots
+        The interior knots.
         """
-
-        return self.t[self.degree + 1: -(self.degree + 1)]
+        return self.t[self.degree + 1 : -(self.degree + 1)]
 
     @property
     def c(self):
         """
-        The coefficients vector
+        The coefficients vector.
         """
-
         if self._c is None:
             return np.zeros(len(self.t))
         else:
@@ -326,18 +360,21 @@ class Spline1D(_Spline):
     @c.setter
     def c(self, value):
         if self._c is None:
-            raise ValueError("The model parameters must be initialized before setting coeffs.")
+            raise ValueError(
+                "The model parameters must be initialized before setting coeffs."
+            )
         elif len(value) == len(self._c):
             self._c = value
         else:
-            raise ValueError("There must be exactly as many coeffs as previously defined.")
+            raise ValueError(
+                "There must be exactly as many coeffs as previously defined."
+            )
 
     @property
     def degree(self):
         """
-        The degree of the spline polynomials
+        The degree of the spline polynomials.
         """
-
         return self._degree
 
     @property
@@ -347,9 +384,8 @@ class Spline1D(_Spline):
     @property
     def tck(self):
         """
-        Scipy 'tck' tuple representation
+        Scipy 'tck' tuple representation.
         """
-
         return (self.t, self.c, self.degree)
 
     @tck.setter
@@ -370,9 +406,8 @@ class Spline1D(_Spline):
     @property
     def bspline(self):
         """
-        Scipy bspline object representation
+        Scipy bspline object representation.
         """
-
         from scipy.interpolate import BSpline
 
         return BSpline(*self.tck)
@@ -389,14 +424,13 @@ class Spline1D(_Spline):
     @property
     def knots(self):
         """
-        Dictionary of knot parameters
+        Dictionary of knot parameters.
         """
-
         return [getattr(self, knot) for knot in self._knot_names]
 
     @property
     def user_knots(self):
-        """If the knots have been supplied by the user"""
+        """If the knots have been supplied by the user."""
         return self._user_knots
 
     @user_knots.setter
@@ -406,9 +440,8 @@ class Spline1D(_Spline):
     @property
     def coeffs(self):
         """
-        Dictionary of coefficient parameters
+        Dictionary of coefficient parameters.
         """
-
         return [getattr(self, coeff) for coeff in self._coeff_names]
 
     def _init_parameters(self):
@@ -439,18 +472,16 @@ class Spline1D(_Spline):
 
     def _init_knots(self, knots, has_bounds, lower, upper):
         if np.issubdtype(type(knots), np.integer):
-            self._t = np.concatenate(
-                (lower, np.zeros(knots), upper)
-            )
+            self._t = np.concatenate((lower, np.zeros(knots), upper))
         elif isiterable(knots):
             self._user_knots = True
             if has_bounds:
-                self._t = np.concatenate(
-                    (lower, np.array(knots), upper)
-                )
+                self._t = np.concatenate((lower, np.array(knots), upper))
             else:
-                if len(knots) < 2*(self._degree + 1):
-                    raise ValueError(f"Must have at least {2*(self._degree + 1)} knots.")
+                if len(knots) < 2 * (self._degree + 1):
+                    raise ValueError(
+                        f"Must have at least {2*(self._degree + 1)} knots."
+                    )
                 self._t = np.array(knots)
         else:
             raise ValueError(f"Knots: {knots} must be iterable or value")
@@ -486,16 +517,18 @@ class Spline1D(_Spline):
         kwargs = super().evaluate(*args, **kwargs)
         x = args[0]
 
-        if 'nu' in kwargs:
-            if kwargs['nu'] > self.degree + 1:
-                raise RuntimeError("Cannot evaluate a derivative of "
-                                   f"order higher than {self.degree + 1}")
+        if "nu" in kwargs:
+            if kwargs["nu"] > self.degree + 1:
+                raise RuntimeError(
+                    "Cannot evaluate a derivative of "
+                    f"order higher than {self.degree + 1}"
+                )
 
         return self.bspline(x, **kwargs)
 
     def derivative(self, nu=1):
         """
-        Create a spline that is the derivative of this one
+        Create a spline that is the derivative of this one.
 
         Parameters
         ----------
@@ -510,11 +543,11 @@ class Spline1D(_Spline):
 
             return derivative
         else:
-            raise ValueError(f'Must have nu <= {self.degree}')
+            raise ValueError(f"Must have nu <= {self.degree}")
 
     def antiderivative(self, nu=1):
         """
-        Create a spline that is an antiderivative of this one
+        Create a spline that is an antiderivative of this one.
 
         Parameters
         ----------
@@ -533,24 +566,23 @@ class Spline1D(_Spline):
 
             return antiderivative
         else:
-            raise ValueError("Supported splines can have max degree 5, "
-                             f"antiderivative degree will be {nu + self.degree}")
+            raise ValueError(
+                "Supported splines can have max degree 5, "
+                f"antiderivative degree will be {nu + self.degree}"
+            )
 
 
 class _SplineFitter(abc.ABC):
     """
-    Base Spline Fitter
+    Base Spline Fitter.
     """
 
     def __init__(self):
-        self.fit_info = {
-            'resid': None,
-            'spline': None
-        }
+        self.fit_info = {"resid": None, "spline": None}
 
     def _set_fit_info(self, spline):
-        self.fit_info['resid'] = spline.get_residual()
-        self.fit_info['spline'] = spline
+        self.fit_info["resid"] = spline.get_residual()
+        self.fit_info["spline"] = spline
 
     @abc.abstractmethod
     def _fit_method(self, model, x, y, **kwargs):
@@ -565,7 +597,9 @@ class _SplineFitter(abc.ABC):
             spline = self._fit_method(model_copy, x, y, **kwargs)
 
         else:
-            raise ModelDefinitionError("Only spline models are compatible with this fitter.")
+            raise ModelDefinitionError(
+                "Only spline models are compatible with this fitter."
+            )
 
         self._set_fit_info(spline)
 
@@ -574,23 +608,28 @@ class _SplineFitter(abc.ABC):
 
 class SplineInterpolateFitter(_SplineFitter):
     """
-    Fit an interpolating spline
+    Fit an interpolating spline.
     """
 
     def _fit_method(self, model, x, y, **kwargs):
-        weights = kwargs.pop('weights', None)
-        bbox = kwargs.pop('bbox', [None, None])
+        weights = kwargs.pop("weights", None)
+        bbox = kwargs.pop("bbox", [None, None])
 
         if model.user_knots:
-            warnings.warn("The current user specified knots maybe ignored for interpolating data",
-                          AstropyUserWarning)
+            warnings.warn(
+                "The current user specified knots maybe ignored for interpolating data",
+                AstropyUserWarning,
+            )
             model.user_knots = False
 
         if bbox != [None, None]:
             model.bounding_box = bbox
 
         from scipy.interpolate import InterpolatedUnivariateSpline
-        spline = InterpolatedUnivariateSpline(x, y, w=weights, bbox=bbox, k=model.degree)
+
+        spline = InterpolatedUnivariateSpline(
+            x, y, w=weights, bbox=bbox, k=model.degree
+        )
 
         model.tck = spline._eval_args
         return spline
@@ -598,23 +637,26 @@ class SplineInterpolateFitter(_SplineFitter):
 
 class SplineSmoothingFitter(_SplineFitter):
     """
-    Fit a smoothing spline
+    Fit a smoothing spline.
     """
 
     def _fit_method(self, model, x, y, **kwargs):
-        s = kwargs.pop('s', None)
-        weights = kwargs.pop('weights', None)
-        bbox = kwargs.pop('bbox', [None, None])
+        s = kwargs.pop("s", None)
+        weights = kwargs.pop("weights", None)
+        bbox = kwargs.pop("bbox", [None, None])
 
         if model.user_knots:
-            warnings.warn("The current user specified knots maybe ignored for smoothing data",
-                          AstropyUserWarning)
+            warnings.warn(
+                "The current user specified knots maybe ignored for smoothing data",
+                AstropyUserWarning,
+            )
             model.user_knots = False
 
         if bbox != [None, None]:
             model.bounding_box = bbox
 
         from scipy.interpolate import UnivariateSpline
+
         spline = UnivariateSpline(x, y, w=weights, bbox=bbox, k=model.degree, s=s)
 
         model.tck = spline._eval_args
@@ -627,15 +669,17 @@ class SplineExactKnotsFitter(_SplineFitter):
     """
 
     def _fit_method(self, model, x, y, **kwargs):
-        t = kwargs.pop('t', None)
-        weights = kwargs.pop('weights', None)
-        bbox = kwargs.pop('bbox', [None, None])
+        t = kwargs.pop("t", None)
+        weights = kwargs.pop("weights", None)
+        bbox = kwargs.pop("bbox", [None, None])
 
         if t is not None:
             if model.user_knots:
-                warnings.warn("The current user specified knots will be "
-                              "overwritten for by knots passed into this function",
-                              AstropyUserWarning)
+                warnings.warn(
+                    "The current user specified knots will be "
+                    "overwritten for by knots passed into this function",
+                    AstropyUserWarning,
+                )
         else:
             if model.user_knots:
                 t = model.t_interior
@@ -646,6 +690,7 @@ class SplineExactKnotsFitter(_SplineFitter):
             model.bounding_box = bbox
 
         from scipy.interpolate import LSQUnivariateSpline
+
         spline = LSQUnivariateSpline(x, y, t, w=weights, bbox=bbox, k=model.degree)
 
         model.tck = spline._eval_args
@@ -659,24 +704,22 @@ class SplineSplrepFitter(_SplineFitter):
 
     def __init__(self):
         super().__init__()
-        self.fit_info = {
-            'fp': None,
-            'ier': None,
-            'msg': None
-        }
+        self.fit_info = {"fp": None, "ier": None, "msg": None}
 
     def _fit_method(self, model, x, y, **kwargs):
-        t = kwargs.pop('t', None)
-        s = kwargs.pop('s', None)
-        task = kwargs.pop('task', 0)
-        weights = kwargs.pop('weights', None)
-        bbox = kwargs.pop('bbox', [None, None])
+        t = kwargs.pop("t", None)
+        s = kwargs.pop("s", None)
+        task = kwargs.pop("task", 0)
+        weights = kwargs.pop("weights", None)
+        bbox = kwargs.pop("bbox", [None, None])
 
         if t is not None:
             if model.user_knots:
-                warnings.warn("The current user specified knots will be "
-                              "overwritten for by knots passed into this function",
-                              AstropyUserWarning)
+                warnings.warn(
+                    "The current user specified knots will be "
+                    "overwritten for by knots passed into this function",
+                    AstropyUserWarning,
+                )
         else:
             if model.user_knots:
                 t = model.t_interior
@@ -685,12 +728,23 @@ class SplineSplrepFitter(_SplineFitter):
             model.bounding_box = bbox
 
         from scipy.interpolate import splrep
-        tck, fp, ier, msg = splrep(x, y, w=weights, xb=bbox[0], xe=bbox[1], k=model.degree,
-                                   s=s, t=t, task=task, full_output=1)
+
+        tck, fp, ier, msg = splrep(
+            x,
+            y,
+            w=weights,
+            xb=bbox[0],
+            xe=bbox[1],
+            k=model.degree,
+            s=s,
+            t=t,
+            task=task,
+            full_output=1,
+        )
         model.tck = tck
         return fp, ier, msg
 
     def _set_fit_info(self, spline):
-        self.fit_info['fp'] = spline[0]
-        self.fit_info['ier'] = spline[1]
-        self.fit_info['msg'] = spline[2]
+        self.fit_info["fp"] = spline[0]
+        self.fit_info["ier"] = spline[1]
+        self.fit_info["msg"] = spline[2]

@@ -10,7 +10,7 @@ from astropy.utils.decorators import format_doc
 
 from .utils import DEFAULT_OBSTIME, EARTH_CENTER
 
-__all__ = ['ITRS']
+__all__ = ["ITRS"]
 
 doc_footer = """
     Other parameters
@@ -78,7 +78,12 @@ class ITRS(BaseCoordinateFrame):
         from astropy.coordinates.earth import EarthLocation
 
         cart = self.represent_as(CartesianRepresentation)
-        return EarthLocation(x=cart.x, y=cart.y, z=cart.z)
+        return EarthLocation(
+            x=cart.x + self.location.x,
+            y=cart.y + self.location.y,
+            z=cart.z + self.location.z,
+        )
+
 
 # Self-transform is in intermediate_rotation_transforms.py with all the other
 # ITRS transforms

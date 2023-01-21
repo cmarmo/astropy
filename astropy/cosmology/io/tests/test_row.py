@@ -26,7 +26,7 @@ class ToFromRowTestMixin(ToFromTestMixinBase):
     @pytest.mark.parametrize("in_meta", [True, False])
     def test_to_row_in_meta(self, cosmo_cls, cosmo, in_meta):
         """Test where the cosmology class is placed."""
-        row = cosmo.to_format('astropy.row', cosmology_in_meta=in_meta)
+        row = cosmo.to_format("astropy.row", cosmology_in_meta=in_meta)
 
         # if it's in metadata, it's not a column. And vice versa.
         if in_meta:
@@ -113,7 +113,7 @@ class ToFromRowTestMixin(ToFromTestMixinBase):
         assert not isinstance(obj, Cosmology)
 
         is_equiv = cosmo.is_equivalent(obj, format=format)
-        assert is_equiv is (True if format is not False else False)
+        assert is_equiv is (format is not False)
 
 
 class TestToFromTable(ToFromDirectTestBase, ToFromRowTestMixin):

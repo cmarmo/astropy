@@ -7,10 +7,10 @@ from matplotlib.lines import Path
 from astropy.coordinates.angle_utilities import angular_separation
 
 # Tolerance for WCS round-tripping, relative to the scale size
-ROUND_TRIP_RTOL = 1.
+ROUND_TRIP_RTOL = 1.0
 
 # Tolerance for discontinuities relative to the median
-DISCONT_FACTOR = 10.
+DISCONT_FACTOR = 10.0
 
 
 def get_lon_lat_path(lon_lat, pixel, lon_lat_check):
@@ -28,22 +28,24 @@ def get_lon_lat_path(lon_lat, pixel, lon_lat_check):
         The world coordinates derived from converting from ``pixel``, which is
         used to ensure round-tripping.
     """
-
     # In some spherical projections, some parts of the curve are 'behind' or
     # 'in front of' the plane of the image, so we find those by reversing the
     # transformation and finding points where the result is not consistent.
 
-    sep = angular_separation(np.radians(lon_lat[:, 0]),
-                             np.radians(lon_lat[:, 1]),
-                             np.radians(lon_lat_check[:, 0]),
-                             np.radians(lon_lat_check[:, 1]))
+    sep = angular_separation(
+        np.radians(lon_lat[:, 0]),
+        np.radians(lon_lat[:, 1]),
+        np.radians(lon_lat_check[:, 0]),
+        np.radians(lon_lat_check[:, 1]),
+    )
 
     # Define the relevant scale size using the separation between the first two points
-    scale_size = angular_separation(*np.radians(lon_lat[0, :]), *np.radians(lon_lat[1, :]))
+    scale_size = angular_separation(
+        *np.radians(lon_lat[0, :]), *np.radians(lon_lat[1, :])
+    )
 
-    with np.errstate(invalid='ignore'):
-
-        sep[sep > np.pi] -= 2. * np.pi
+    with np.errstate(invalid="ignore"):
+        sep[sep > np.pi] -= 2.0 * np.pi
 
         mask = np.abs(sep > ROUND_TRIP_RTOL * scale_size)
 
@@ -66,8 +68,9 @@ def get_lon_lat_path(lon_lat, pixel, lon_lat_check):
     # We start off by pre-computing the step in pixel coordinates from one
     # point to the next. The idea is to look for large jumps that might indicate
     # discontinuities.
-    step = np.sqrt((pixel[1:, 0] - pixel[:-1, 0]) ** 2 +
-                   (pixel[1:, 1] - pixel[:-1, 1]) ** 2)
+    step = np.sqrt(
+        (pixel[1:, 0] - pixel[:-1, 0]) ** 2 + (pixel[1:, 1] - pixel[:-1, 1]) ** 2
+    )
 
     # We search for discontinuities by looking for places where the step
     # is larger by more than a given factor compared to the median
@@ -89,7 +92,7 @@ def get_lon_lat_path(lon_lat, pixel, lon_lat_check):
 
 def get_gridline_path(world, pixel):
     """
-    Draw a grid line
+    Draw a grid line.
 
     Parameters
     ----------
@@ -99,7 +102,6 @@ def get_gridline_path(world, pixel):
     pixel : ndarray
         The pixel coordinates corresponding to ``lon_lat``
     """
-
     # Mask values with invalid pixel positions
     mask = np.isnan(pixel[:, 0]) | np.isnan(pixel[:, 1])
 

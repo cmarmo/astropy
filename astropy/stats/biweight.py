@@ -8,8 +8,13 @@ import numpy as np
 
 from .funcs import median_absolute_deviation
 
-__all__ = ['biweight_location', 'biweight_scale', 'biweight_midvariance',
-           'biweight_midcovariance', 'biweight_midcorrelation']
+__all__ = [
+    "biweight_location",
+    "biweight_scale",
+    "biweight_midvariance",
+    "biweight_midcovariance",
+    "biweight_midcorrelation",
+]
 
 
 def _stat_functions(data, ignore_nan=False):
@@ -104,7 +109,6 @@ def biweight_location(data, c=6.0, M=None, axis=None, *, ignore_nan=False):
     >>> print(biloc)    # doctest: +FLOAT_CMP
     0.01535330525461019
     """
-
     median_func, sum_func = _stat_functions(data, ignore_nan=ignore_nan)
 
     if isinstance(data, np.ma.MaskedArray) and ignore_nan:
@@ -125,28 +129,27 @@ def biweight_location(data, c=6.0, M=None, axis=None, *, ignore_nan=False):
 
     # mad = 0 means data is constant or mostly constant
     # mad = np.nan means data contains NaNs and ignore_nan=False
-    if axis is None and (mad == 0. or np.isnan(mad)):
+    if axis is None and (mad == 0.0 or np.isnan(mad)):
         return M
 
     if axis is not None:
         mad = np.expand_dims(mad, axis=axis)
 
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         u = d / (c * mad)
 
     # now remove the outlier points
     # ignore RuntimeWarnings for comparisons with NaN data values
-    with np.errstate(invalid='ignore'):
+    with np.errstate(invalid="ignore"):
         mask = np.abs(u) >= 1
-    u = (1 - u ** 2) ** 2
+    u = (1 - u**2) ** 2
     u[mask] = 0
 
     # If mad == 0 along the specified ``axis`` in the input data, return
     # the median value along that axis.
     # Ignore RuntimeWarnings for divide by zero
-    with np.errstate(divide='ignore', invalid='ignore'):
-        value = M.squeeze() + (sum_func(d * u, axis=axis) /
-                               sum_func(u, axis=axis))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        value = M.squeeze() + (sum_func(d * u, axis=axis) / sum_func(u, axis=axis))
         if np.isscalar(value):
             return value
 
@@ -156,8 +159,9 @@ def biweight_location(data, c=6.0, M=None, axis=None, *, ignore_nan=False):
         return where_func(mad.squeeze() == 0, M.squeeze(), value)
 
 
-def biweight_scale(data, c=9.0, M=None, axis=None, modify_sample_size=False,
-                   *, ignore_nan=False):
+def biweight_scale(
+    data, c=9.0, M=None, axis=None, modify_sample_size=False, *, ignore_nan=False
+):
     r"""
     Compute the biweight scale.
 
@@ -263,15 +267,21 @@ def biweight_scale(data, c=9.0, M=None, axis=None, modify_sample_size=False,
     >>> print(biscl)    # doctest: +FLOAT_CMP
     1.0239311812635818
     """
-
     return np.sqrt(
-        biweight_midvariance(data, c=c, M=M, axis=axis,
-                             modify_sample_size=modify_sample_size,
-                             ignore_nan=ignore_nan))
+        biweight_midvariance(
+            data,
+            c=c,
+            M=M,
+            axis=axis,
+            modify_sample_size=modify_sample_size,
+            ignore_nan=ignore_nan,
+        )
+    )
 
 
-def biweight_midvariance(data, c=9.0, M=None, axis=None,
-                         modify_sample_size=False, *, ignore_nan=False):
+def biweight_midvariance(
+    data, c=9.0, M=None, axis=None, modify_sample_size=False, *, ignore_nan=False
+):
     r"""
     Compute the biweight midvariance.
 
@@ -397,22 +407,22 @@ def biweight_midvariance(data, c=9.0, M=None, axis=None,
     if axis is None:
         # data is constant or mostly constant OR
         # data contains NaNs and ignore_nan=False
-        if mad == 0. or np.isnan(mad):
-            return mad ** 2  # variance units
+        if mad == 0.0 or np.isnan(mad):
+            return mad**2  # variance units
     else:
         mad = np.expand_dims(mad, axis=axis)
 
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         u = d / (c * mad)
 
     # now remove the outlier points
     # ignore RuntimeWarnings for comparisons with NaN data values
-    with np.errstate(invalid='ignore'):
+    with np.errstate(invalid="ignore"):
         mask = np.abs(u) < 1
     if isinstance(mask, np.ma.MaskedArray):
         mask = mask.filled(fill_value=False)  # exclude masked data values
 
-    u = u ** 2
+    u = u**2
 
     if modify_sample_size:
         n = sum_func(mask, axis=axis)
@@ -425,17 +435,17 @@ def biweight_midvariance(data, c=9.0, M=None, axis=None,
             include_mask[np.isnan(data)] = 0
         n = np.sum(include_mask, axis=axis)
 
-    f1 = d * d * (1. - u)**4
-    f1[~mask] = 0.
+    f1 = d * d * (1.0 - u) ** 4
+    f1[~mask] = 0.0
     f1 = sum_func(f1, axis=axis)
-    f2 = (1. - u) * (1. - 5.*u)
-    f2[~mask] = 0.
-    f2 = np.abs(np.sum(f2, axis=axis))**2
+    f2 = (1.0 - u) * (1.0 - 5.0 * u)
+    f2[~mask] = 0.0
+    f2 = np.abs(np.sum(f2, axis=axis)) ** 2
 
     # If mad == 0 along the specified ``axis`` in the input data, return
     # 0.0 along that axis.
     # Ignore RuntimeWarnings for divide by zero.
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         value = n * f1 / f2
         if np.isscalar(value):
             return value
@@ -443,7 +453,7 @@ def biweight_midvariance(data, c=9.0, M=None, axis=None,
         where_func = np.where
         if isinstance(data, np.ma.MaskedArray):
             where_func = np.ma.where  # return MaskedArray
-        return where_func(mad.squeeze() == 0, 0., value)
+        return where_func(mad.squeeze() == 0, 0.0, value)
 
 
 def biweight_midcovariance(data, c=9.0, M=None, modify_sample_size=False):
@@ -604,21 +614,20 @@ def biweight_midcovariance(data, c=9.0, M=None, modify_sample_size=False):
     >>> print(np.sqrt(bicov.diagonal()))  # doctest: +FLOAT_CMP
     [0.91343072 2.67519302]
     """
-
     data = np.asanyarray(data).astype(np.float64)
 
     # ensure data is 2D
     if data.ndim == 1:
         data = data[np.newaxis, :]
     if data.ndim != 2:
-        raise ValueError('The input array must be 2D or 1D.')
+        raise ValueError("The input array must be 2D or 1D.")
 
     # estimate location if not given
     if M is None:
         M = np.median(data, axis=1)
     M = np.asanyarray(M)
     if M.ndim > 1:
-        raise ValueError('M must be a scalar or 1D array.')
+        raise ValueError("M must be a scalar or 1D array.")
 
     # set up the differences
     d = (data.T - M).T
@@ -626,14 +635,14 @@ def biweight_midcovariance(data, c=9.0, M=None, modify_sample_size=False):
     # set up the weighting
     mad = median_absolute_deviation(data, axis=1)
 
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         u = (d.T / (c * mad)).T
 
     # now remove the outlier points
     # ignore RuntimeWarnings for comparisons with NaN data values
-    with np.errstate(invalid='ignore'):
+    with np.errstate(invalid="ignore"):
         mask = np.abs(u) < 1
-    u = u ** 2
+    u = u**2
 
     if modify_sample_size:
         maskf = mask.astype(float)
@@ -641,12 +650,12 @@ def biweight_midcovariance(data, c=9.0, M=None, modify_sample_size=False):
     else:
         n = data[0].size
 
-    usub1 = (1. - u)
-    usub5 = (1. - 5. * u)
-    usub1[~mask] = 0.
+    usub1 = 1.0 - u
+    usub5 = 1.0 - 5.0 * u
+    usub1[~mask] = 0.0
 
-    with np.errstate(divide='ignore', invalid='ignore'):
-        numerator = d * usub1 ** 2
+    with np.errstate(divide="ignore", invalid="ignore"):
+        numerator = d * usub1**2
         denominator = (usub1 * usub5).sum(axis=1)[:, np.newaxis]
         numerator_matrix = np.dot(numerator, numerator.T)
         denominator_matrix = np.dot(denominator, denominator.T)
@@ -730,17 +739,17 @@ def biweight_midcorrelation(x, y, c=9.0, M=None, modify_sample_size=False):
     >>> print(bicorr)  # doctest: +FLOAT_CMP
     -0.09203238319481295
     """
-
     x = np.asanyarray(x)
     y = np.asanyarray(y)
     if x.ndim != 1:
-        raise ValueError('x must be a 1D array.')
+        raise ValueError("x must be a 1D array.")
     if y.ndim != 1:
-        raise ValueError('y must be a 1D array.')
+        raise ValueError("y must be a 1D array.")
     if x.shape != y.shape:
-        raise ValueError('x and y must have the same shape.')
+        raise ValueError("x and y must have the same shape.")
 
-    bicorr = biweight_midcovariance([x, y], c=c, M=M,
-                                    modify_sample_size=modify_sample_size)
+    bicorr = biweight_midcovariance(
+        [x, y], c=c, M=M, modify_sample_size=modify_sample_size
+    )
 
     return bicorr[0, 1] / (np.sqrt(bicorr[0, 0] * bicorr[1, 1]))

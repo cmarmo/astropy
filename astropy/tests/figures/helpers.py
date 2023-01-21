@@ -15,24 +15,23 @@ def figure_test(*args, **kwargs):
     options used by all figure tests in astropy, and also adds the decorator
     to allow remote data to be accessed.
     """
-
     # NOTE: the savefig_kwargs option below is to avoid using PNG files with
     # the matplotlib version embedded since this changes for every developer
     # version.
 
-    tolerance = kwargs.pop('tolerance', 0)
-    style = kwargs.pop('style', {})
-    savefig_kwargs = kwargs.pop('savefig_kwargs', {})
-    savefig_kwargs['metadata'] = {'Software': None}
+    tolerance = kwargs.pop("tolerance", 0)
+    style = kwargs.pop("style", {})
+    savefig_kwargs = kwargs.pop("savefig_kwargs", {})
+    savefig_kwargs["metadata"] = {"Software": None}
 
     def decorator(test_function):
-
         @pytest.mark.remote_data
-        @pytest.mark.mpl_image_compare(tolerance=tolerance,
-                                       style=style,
-                                       savefig_kwargs=savefig_kwargs,
-                                       **kwargs)
-        @pytest.mark.skipif(not HAS_PYTEST_MPL, reason='pytest-mpl is required for the figure tests')
+        @pytest.mark.mpl_image_compare(
+            tolerance=tolerance, style=style, savefig_kwargs=savefig_kwargs, **kwargs
+        )
+        @pytest.mark.skipif(
+            not HAS_PYTEST_MPL, reason="pytest-mpl is required for the figure tests"
+        )
         @wraps(test_function)
         def test_wrapper(*args, **kwargs):
             return test_function(*args, **kwargs)

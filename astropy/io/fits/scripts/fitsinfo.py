@@ -46,7 +46,6 @@ def fitsinfo(filename):
     filename : str
         The path to a FITS file.
     """
-
     try:
         fits.info(filename)
     except OSError as e:
@@ -57,14 +56,16 @@ def fitsinfo(filename):
 def main(args=None):
     """The main function called by the `fitsinfo` script."""
     parser = argparse.ArgumentParser(
-        description=DESCRIPTION,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        description=DESCRIPTION, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument(
-        '--version', action='version',
-        version=f'%(prog)s {__version__}')
-    parser.add_argument('filename', nargs='+',
-                        help='Path to one or more FITS files. '
-                             'Wildcards are supported.')
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
+    parser.add_argument(
+        "filename",
+        nargs="+",
+        help="Path to one or more FITS files. Wildcards are supported.",
+    )
     args = parser.parse_args(args)
 
     for idx, filename in enumerate(args.filename):

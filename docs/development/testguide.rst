@@ -95,7 +95,7 @@ You can also run checks or commands not directly related to tests - for instance
 
     tox -e codestyle
 
-will run checks using the flake8 tool.
+will run checks using the ``ruff`` tool.
 
 .. note::
     It is suggested that you automate the code-style checks using the provided
@@ -775,7 +775,7 @@ hashes and images.
 
 To run the Astropy tests with the image comparison, use e.g.::
 
-    tox -e py39-test-image-mpl311
+    tox -e py39-test-image-mpl311-cov
 
 However, note that the output can be sensitive to the operating system and
 specific version of libraries such as freetype. In general, using tox will

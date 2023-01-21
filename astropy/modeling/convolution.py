@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-"""Convolution Model"""
+"""Convolution Model."""
 # pylint: disable=line-too-long, too-many-lines, too-many-arguments, invalid-name
 import numpy as np
 
@@ -59,9 +59,8 @@ class Convolution(CompoundModel):
 
     def clear_cache(self):
         """
-        Clears the cached convolution
+        Clears the cached convolution.
         """
-
         self._kwargs = None
         self._convolution = None
 
@@ -72,6 +71,7 @@ class Convolution(CompoundModel):
             data = super().__call__(*mesh, **kwargs)
 
             from scipy.interpolate import RegularGridInterpolator
+
             convolution = RegularGridInterpolator(domain, data)
 
             if self._cache_convolution:
@@ -92,7 +92,7 @@ class Convolution(CompoundModel):
         else:
             output_shape = args[not_scalar[0]].shape
             if not all(args[index].shape == output_shape for index in not_scalar):
-                raise ValueError('Values have differing shapes')
+                raise ValueError("Values have differing shapes")
 
             inputs = []
             for arg in args:

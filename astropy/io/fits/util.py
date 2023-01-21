@@ -84,7 +84,6 @@ class NotifierMixin:
         removed from the listeners list when the listener has no other
         references to it.
         """
-
         if self._listeners is None:
             self._listeners = weakref.WeakValueDictionary()
 
@@ -95,7 +94,6 @@ class NotifierMixin:
         Removes the specified listener from the listeners list.  This relies
         on object identity (i.e. the ``is`` operator).
         """
-
         if self._listeners is None:
             return
 
@@ -111,11 +109,10 @@ class NotifierMixin:
         The notification does not by default include the object that actually
         changed (``self``), but it certainly may if required.
         """
-
         if self._listeners is None:
             return
 
-        method_name = f'_update_{notification}'
+        method_name = f"_update_{notification}"
         for listener in self._listeners.valuerefs():
             # Use valuerefs instead of itervaluerefs; see
             # https://github.com/astropy/astropy/issues/4015
@@ -133,7 +130,6 @@ class NotifierMixin:
         Exclude listeners when saving the listener's state, since they may be
         ephemeral.
         """
-
         # TODO: This hasn't come up often, but if anyone needs to pickle HDU
         # objects it will be necessary when HDU objects' states are restored to
         # re-register themselves as listeners on their new column instances.
@@ -143,7 +139,7 @@ class NotifierMixin:
             # Chances are the super object doesn't have a getstate
             state = self.__dict__.copy()
 
-        state['_listeners'] = None
+        state["_listeners"] = None
         return state
 
 
@@ -157,7 +153,6 @@ def first(iterable):
     >>> first(a)
     1
     """
-
     return next(iter(iterable))
 
 
@@ -183,14 +178,13 @@ def itersubclasses(cls, _seen=None):
 
     From http://code.activestate.com/recipes/576949/
     """
-
     if _seen is None:
         _seen = set()
     try:
         subs = cls.__subclasses__()
     except TypeError:  # fails only when cls is type
         subs = cls.__subclasses__(cls)
-    for sub in sorted(subs, key=operator.attrgetter('__name__')):
+    for sub in sorted(subs, key=operator.attrgetter("__name__")):
         if sub not in _seen:
             _seen.add(sub)
             yield sub
@@ -209,17 +203,19 @@ def ignore_sigint(func):
         # Get the name of the current thread and determine if this is a single
         # threaded application
         curr_thread = threading.current_thread()
-        single_thread = (threading.active_count() == 1 and
-                         curr_thread.name == 'MainThread')
+        single_thread = (
+            threading.active_count() == 1 and curr_thread.name == "MainThread"
+        )
 
         class SigintHandler:
             def __init__(self):
                 self.sigint_received = False
 
             def __call__(self, signum, frame):
-                warnings.warn('KeyboardInterrupt ignored until {} is '
-                              'complete!'.format(func.__name__),
-                              AstropyUserWarning)
+                warnings.warn(
+                    f"KeyboardInterrupt ignored until {func.__name__} is complete!",
+                    AstropyUserWarning,
+                )
                 self.sigint_received = True
 
         sigint_handler = SigintHandler()
@@ -249,7 +245,6 @@ def pairwise(iterable):
 
     Ex: s -> (s0,s1), (s1,s2), (s2,s3), ....
     """
-
     a, b = itertools.tee(iterable)
     for _ in b:
         # Just a little trick to advance b without having to catch
@@ -260,31 +255,31 @@ def pairwise(iterable):
 
 def encode_ascii(s):
     if isinstance(s, str):
-        return s.encode('ascii')
-    elif (isinstance(s, np.ndarray) and
-          issubclass(s.dtype.type, np.str_)):
-        ns = np.char.encode(s, 'ascii').view(type(s))
+        return s.encode("ascii")
+    elif isinstance(s, np.ndarray) and issubclass(s.dtype.type, np.str_):
+        ns = np.char.encode(s, "ascii").view(type(s))
         if ns.dtype.itemsize != s.dtype.itemsize / 4:
             ns = ns.astype((np.bytes_, s.dtype.itemsize / 4))
         return ns
-    elif (isinstance(s, np.ndarray) and
-          not issubclass(s.dtype.type, np.bytes_)):
-        raise TypeError('string operation on non-string array')
+    elif isinstance(s, np.ndarray) and not issubclass(s.dtype.type, np.bytes_):
+        raise TypeError("string operation on non-string array")
     return s
 
 
 def decode_ascii(s):
     if isinstance(s, bytes):
         try:
-            return s.decode('ascii')
+            return s.decode("ascii")
         except UnicodeDecodeError:
-            warnings.warn('non-ASCII characters are present in the FITS '
-                          'file header and have been replaced by "?" '
-                          'characters', AstropyUserWarning)
-            s = s.decode('ascii', errors='replace')
-            return s.replace('\ufffd', '?')
-    elif (isinstance(s, np.ndarray) and
-          issubclass(s.dtype.type, np.bytes_)):
+            warnings.warn(
+                "non-ASCII characters are present in the FITS "
+                'file header and have been replaced by "?" '
+                "characters",
+                AstropyUserWarning,
+            )
+            s = s.decode("ascii", errors="replace")
+            return s.replace("\ufffd", "?")
+    elif isinstance(s, np.ndarray) and issubclass(s.dtype.type, np.bytes_):
         # np.char.encode/decode annoyingly don't preserve the type of the
         # array, hence the view() call
         # It also doesn't necessarily preserve widths of the strings,
@@ -292,20 +287,19 @@ def decode_ascii(s):
         if s.size == 0:
             # Numpy apparently also has a bug that if a string array is
             # empty calling np.char.decode on it returns an empty float64
-            # array wth
-            dt = s.dtype.str.replace('S', 'U')
+            # array : https://github.com/numpy/numpy/issues/13156
+            dt = s.dtype.str.replace("S", "U")
             ns = np.array([], dtype=dt).view(type(s))
         else:
-            ns = np.char.decode(s, 'ascii').view(type(s))
+            ns = np.char.decode(s, "ascii").view(type(s))
         if ns.dtype.itemsize / 4 != s.dtype.itemsize:
             ns = ns.astype((np.str_, s.dtype.itemsize))
         return ns
-    elif (isinstance(s, np.ndarray) and
-          not issubclass(s.dtype.type, np.str_)):
+    elif isinstance(s, np.ndarray) and not issubclass(s.dtype.type, np.str_):
         # Don't silently pass through on non-string arrays; we don't want
         # to hide errors where things that are not stringy are attempting
         # to be decoded
-        raise TypeError('string operation on non-string array')
+        raise TypeError("string operation on non-string array")
     return s
 
 
@@ -314,18 +308,17 @@ def isreadable(f):
     Returns True if the file-like object can be read from.  This is a common-
     sense approximation of io.IOBase.readable.
     """
-
-    if hasattr(f, 'readable'):
+    if hasattr(f, "readable"):
         return f.readable()
 
-    if hasattr(f, 'closed') and f.closed:
+    if hasattr(f, "closed") and f.closed:
         # This mimics the behavior of io.IOBase.readable
-        raise ValueError('I/O operation on closed file')
+        raise ValueError("I/O operation on closed file")
 
-    if not hasattr(f, 'read'):
+    if not hasattr(f, "read"):
         return False
 
-    if hasattr(f, 'mode') and not any(c in f.mode for c in 'r+'):
+    if hasattr(f, "mode") and not any(c in f.mode for c in "r+"):
         return False
 
     # Not closed, has a 'read()' method, and either has no known mode or a
@@ -338,18 +331,17 @@ def iswritable(f):
     Returns True if the file-like object can be written to.  This is a common-
     sense approximation of io.IOBase.writable.
     """
-
-    if hasattr(f, 'writable'):
+    if hasattr(f, "writable"):
         return f.writable()
 
-    if hasattr(f, 'closed') and f.closed:
+    if hasattr(f, "closed") and f.closed:
         # This mimics the behavior of io.IOBase.writable
-        raise ValueError('I/O operation on closed file')
+        raise ValueError("I/O operation on closed file")
 
-    if not hasattr(f, 'write'):
+    if not hasattr(f, "write"):
         return False
 
-    if hasattr(f, 'mode') and not any(c in f.mode for c in 'wa+'):
+    if hasattr(f, "mode") and not any(c in f.mode for c in "wa+"):
         return False
 
     # Note closed, has a 'write()' method, and either has no known mode or a
@@ -365,12 +357,11 @@ def isfile(f):
     On Python 3 this also returns True if the given object is higher level
     wrapper on top of a FileIO object, such as a TextIOWrapper.
     """
-
     if isinstance(f, io.FileIO):
         return True
-    elif hasattr(f, 'buffer'):
+    elif hasattr(f, "buffer"):
         return isfile(f.buffer)
-    elif hasattr(f, 'raw'):
+    elif hasattr(f, "raw"):
         return isfile(f.raw)
     return False
 
@@ -381,7 +372,6 @@ def fileobj_name(f):
     called its name.  Otherwise f's class or type is returned.  If f is a
     string f itself is returned.
     """
-
     if isinstance(f, (str, bytes)):
         return f
     elif isinstance(f, gzip.GzipFile):
@@ -393,11 +383,11 @@ def fileobj_name(f):
         # As such, for gzip files only return the name of the underlying
         # fileobj, if it exists
         return fileobj_name(f.fileobj)
-    elif hasattr(f, 'name'):
+    elif hasattr(f, "name"):
         return f.name
-    elif hasattr(f, 'filename'):
+    elif hasattr(f, "filename"):
         return f.filename
-    elif hasattr(f, '__class__'):
+    elif hasattr(f, "__class__"):
         return str(f.__class__)
     else:
         return str(type(f))
@@ -411,15 +401,14 @@ def fileobj_closed(f):
     Returns False for all other types of objects, under the assumption that
     they are file-like objects with no sense of a 'closed' state.
     """
-
     if isinstance(f, path_like):
         return True
 
-    if hasattr(f, 'closed'):
+    if hasattr(f, "closed"):
         return f.closed
-    elif hasattr(f, 'fileobj') and hasattr(f.fileobj, 'closed'):
+    elif hasattr(f, "fileobj") and hasattr(f.fileobj, "closed"):
         return f.fileobj.closed
-    elif hasattr(f, 'fp') and hasattr(f.fp, 'closed'):
+    elif hasattr(f, "fp") and hasattr(f.fp, "closed"):
         return f.fp.closed
     else:
         return False
@@ -430,25 +419,24 @@ def fileobj_mode(f):
     Returns the 'mode' string of a file-like object if such a thing exists.
     Otherwise returns None.
     """
-
     # Go from most to least specific--for example gzip objects have a 'mode'
     # attribute, but it's not analogous to the file.mode attribute
 
     # gzip.GzipFile -like
-    if hasattr(f, 'fileobj') and hasattr(f.fileobj, 'mode'):
+    if hasattr(f, "fileobj") and hasattr(f.fileobj, "mode"):
         fileobj = f.fileobj
 
     # astropy.io.fits._File -like, doesn't need additional checks because it's
     # already validated
-    elif hasattr(f, 'fileobj_mode'):
+    elif hasattr(f, "fileobj_mode"):
         return f.fileobj_mode
 
     # PIL-Image -like investigate the fp (filebuffer)
-    elif hasattr(f, 'fp') and hasattr(f.fp, 'mode'):
+    elif hasattr(f, "fp") and hasattr(f.fp, "mode"):
         fileobj = f.fp
 
     # FILEIO -like (normal open(...)), keep as is.
-    elif hasattr(f, 'mode'):
+    elif hasattr(f, "mode"):
         fileobj = f
 
     # Doesn't look like a file-like object, for example strings, urls or paths.
@@ -468,17 +456,17 @@ def _fileobj_normalize_mode(f):
     if isinstance(f, gzip.GzipFile):
         # GzipFiles can be either readonly or writeonly
         if mode == gzip.READ:
-            return 'rb'
+            return "rb"
         elif mode == gzip.WRITE:
-            return 'wb'
+            return "wb"
         else:
             return None  # This shouldn't happen?
 
     # Sometimes Python can produce modes like 'r+b' which will be normalized
     # here to 'rb+'
-    if '+' in mode:
-        mode = mode.replace('+', '')
-        mode += '+'
+    if "+" in mode:
+        mode = mode.replace("+", "")
+        mode += "+"
 
     return mode
 
@@ -488,10 +476,9 @@ def fileobj_is_binary(f):
     Returns True if the give file or file-like object has a file open in binary
     mode.  When in doubt, returns True by default.
     """
-
     # This is kind of a hack for this to work correctly with _File objects,
     # which, for the time being, are *always* binary
-    if hasattr(f, 'binary'):
+    if hasattr(f, "binary"):
         return f.binary
 
     if isinstance(f, io.TextIOBase):
@@ -499,7 +486,7 @@ def fileobj_is_binary(f):
 
     mode = fileobj_mode(f)
     if mode:
-        return 'b' in mode
+        return "b" in mode
     else:
         return True
 
@@ -518,8 +505,7 @@ def fill(text, width, **kwargs):
     :func:`textwrap.wrap` does not otherwise handle well.  Also handles section
     headers.
     """
-
-    paragraphs = text.split('\n\n')
+    paragraphs = text.split("\n\n")
 
     def maybe_fill(t):
         if all(len(l) < width for l in t.splitlines()):
@@ -527,7 +513,7 @@ def fill(text, width, **kwargs):
         else:
             return textwrap.fill(t, width, **kwargs)
 
-    return '\n\n'.join(maybe_fill(p) for p in paragraphs)
+    return "\n\n".join(maybe_fill(p) for p in paragraphs)
 
 
 # On MacOS X 10.8 and earlier, there is a bug that causes numpy.fromfile to
@@ -540,19 +526,18 @@ CHUNKED_FROMFILE = None
 
 def _array_from_file(infile, dtype, count):
     """Create a numpy array from a file or a file-like object."""
-
     if isfile(infile):
-
         global CHUNKED_FROMFILE
         if CHUNKED_FROMFILE is None:
-            if (sys.platform == 'darwin' and
-                    Version(platform.mac_ver()[0]) < Version('10.9')):
+            if sys.platform == "darwin" and Version(platform.mac_ver()[0]) < Version(
+                "10.9"
+            ):
                 CHUNKED_FROMFILE = True
             else:
                 CHUNKED_FROMFILE = False
 
         if CHUNKED_FROMFILE:
-            chunk_size = int(1024 ** 3 / dtype.itemsize)  # 1Gb to be safe
+            chunk_size = int(1024**3 / dtype.itemsize)  # 1Gb to be safe
             if count < chunk_size:
                 return np.fromfile(infile, dtype=dtype, count=count)
             else:
@@ -576,8 +561,8 @@ def _array_from_file(infile, dtype, count):
         return array
 
 
-_OSX_WRITE_LIMIT = (2 ** 32) - 1
-_WIN_WRITE_LIMIT = (2 ** 31) - 1
+_OSX_WRITE_LIMIT = (2**32) - 1
+_WIN_WRITE_LIMIT = (2**31) - 1
 
 
 def _array_to_file(arr, outfile):
@@ -596,7 +581,6 @@ def _array_to_file(arr, outfile):
     If writing directly to an on-disk file this delegates directly to
     `ndarray.tofile`.  Otherwise a slower Python implementation is used.
     """
-
     try:
         seekable = outfile.seekable()
     except AttributeError:
@@ -617,11 +601,14 @@ def _array_to_file(arr, outfile):
     # Apparently Windows has its own fwrite bug:
     # https://github.com/numpy/numpy/issues/2256
 
-    if (sys.platform == 'darwin' and arr.nbytes >= _OSX_WRITE_LIMIT + 1 and
-            arr.nbytes % 4096 == 0):
+    if (
+        sys.platform == "darwin"
+        and arr.nbytes >= _OSX_WRITE_LIMIT + 1
+        and arr.nbytes % 4096 == 0
+    ):
         # chunksize is a count of elements in the array, not bytes
         chunksize = _OSX_WRITE_LIMIT // arr.itemsize
-    elif sys.platform.startswith('win'):
+    elif sys.platform.startswith("win"):
         chunksize = _WIN_WRITE_LIMIT // arr.itemsize
     else:
         # Just pass the whole array to the write routine
@@ -632,7 +619,7 @@ def _array_to_file(arr, outfile):
     idx = 0
     arr = arr.view(np.ndarray).flatten()
     while idx < arr.nbytes:
-        write(arr[idx:idx + chunksize], outfile)
+        write(arr[idx : idx + chunksize], outfile)
         idx += chunksize
 
 
@@ -641,14 +628,12 @@ def _array_to_file_like(arr, fileobj):
     Write a `~numpy.ndarray` to a file-like object (which is not supported by
     `numpy.ndarray.tofile`).
     """
-
     # If the array is empty, we can simply take a shortcut and return since
     # there is nothing to write.
     if len(arr) == 0:
         return
 
     if arr.flags.contiguous:
-
         # It suffices to just pass the underlying buffer directly to the
         # fileobj's write (assuming it supports the buffer interface). If
         # it does not have the buffer interface, a TypeError should be returned
@@ -661,17 +646,18 @@ def _array_to_file_like(arr, fileobj):
         else:
             return
 
-    if hasattr(np, 'nditer'):
+    if hasattr(np, "nditer"):
         # nditer version for non-contiguous arrays
-        for item in np.nditer(arr, order='C'):
+        for item in np.nditer(arr, order="C"):
             fileobj.write(item.tobytes())
     else:
         # Slower version for Numpy versions without nditer;
         # The problem with flatiter is it doesn't preserve the original
         # byteorder
         byteorder = arr.dtype.byteorder
-        if ((sys.byteorder == 'little' and byteorder == '>')
-                or (sys.byteorder == 'big' and byteorder == '<')):
+        if (sys.byteorder == "little" and byteorder == ">") or (
+            sys.byteorder == "big" and byteorder == "<"
+        ):
             for item in arr.flat:
                 fileobj.write(item.byteswap().tobytes())
         else:
@@ -684,7 +670,6 @@ def _write_string(f, s):
     Write a string to a file, encoding to ASCII if the file is open in binary
     mode, or decoding if the file is open in text mode.
     """
-
     # Assume if the file object doesn't have a specific mode, that the mode is
     # binary
     binmode = fileobj_is_binary(f)
@@ -703,12 +688,11 @@ def _convert_array(array, dtype):
     the same as the old dtype and both types are not numeric, a view is
     returned.  Otherwise a new array must be created.
     """
-
     if array.dtype == dtype:
         return array
-    elif (array.dtype.itemsize == dtype.itemsize and not
-            (np.issubdtype(array.dtype, np.number) and
-             np.issubdtype(dtype, np.number))):
+    elif array.dtype.itemsize == dtype.itemsize and not (
+        np.issubdtype(array.dtype, np.number) and np.issubdtype(dtype, np.number)
+    ):
         # Includes a special case when both dtypes are at least numeric to
         # account for old Trac ticket 218 (now inaccessible).
         return array.view(dtype)
@@ -721,19 +705,17 @@ def _pseudo_zero(dtype):
     Given a numpy dtype, finds its "zero" point, which is exactly in the
     middle of its range.
     """
-
     # special case for int8
-    if dtype.kind == 'i' and dtype.itemsize == 1:
+    if dtype.kind == "i" and dtype.itemsize == 1:
         return -128
 
-    assert dtype.kind == 'u'
+    assert dtype.kind == "u"
     return 1 << (dtype.itemsize * 8 - 1)
 
 
 def _is_pseudo_integer(dtype):
-    return (
-        (dtype.kind == 'u' and dtype.itemsize >= 2)
-        or (dtype.kind == 'i' and dtype.itemsize == 1)
+    return (dtype.kind == "u" and dtype.itemsize >= 2) or (
+        dtype.kind == "i" and dtype.itemsize == 1
     )
 
 
@@ -743,7 +725,6 @@ def _is_int(val):
 
 def _str_to_num(val):
     """Converts a given string to either an int or a float if necessary."""
-
     try:
         num = int(val)
     except ValueError:
@@ -759,16 +740,15 @@ def _words_group(s, width):
     which are longer than ``strlen``, then they will be split in the middle of
     the word.
     """
-
     words = []
     slen = len(s)
 
     # appending one blank at the end always ensures that the "last" blank
     # is beyond the end of the string
-    arr = np.frombuffer(s.encode('utf8') + b' ', dtype='S1')
+    arr = np.frombuffer(s.encode("utf8") + b" ", dtype="S1")
 
     # locations of the blanks
-    blank_loc = np.nonzero(arr == b' ')[0]
+    blank_loc = np.nonzero(arr == b" ")[0]
     offset = 0
     xoffset = 0
 
@@ -801,7 +781,6 @@ def _tmp_name(input):
     Create a temporary file name which should not already exist.  Use the
     directory of the input file as the base name of the mkstemp() output.
     """
-
     if input is not None:
         input = os.path.dirname(input)
     f, fn = tempfile.mkstemp(dir=input)
@@ -814,12 +793,11 @@ def _get_array_mmap(array):
     If the array has an mmap.mmap at base of its base chain, return the mmap
     object; otherwise return None.
     """
-
     if isinstance(array, mmap.mmap):
         return array
 
     base = array
-    while hasattr(base, 'base') and base.base is not None:
+    while hasattr(base, "base") and base.base is not None:
         if isinstance(base.base, mmap.mmap):
             return base.base
         base = base.base
@@ -830,17 +808,22 @@ def _free_space_check(hdulist, dirname=None):
     try:
         yield
     except OSError as exc:
-        error_message = ''
+        error_message = ""
         if not isinstance(hdulist, list):
-            hdulist = [hdulist, ]
+            hdulist = [
+                hdulist,
+            ]
         if dirname is None:
             dirname = os.path.dirname(hdulist._file.name)
         if os.path.isdir(dirname):
             free_space = data.get_free_space_in_dir(dirname)
             hdulist_size = sum(hdu.size for hdu in hdulist)
             if free_space < hdulist_size:
-                error_message = ("Not enough space on disk: requested {}, "
-                                 "available {}. ".format(hdulist_size, free_space))
+                error_message = (
+                    "Not enough space on disk: requested {}, available {}. ".format(
+                        hdulist_size, free_space
+                    )
+                )
 
         for hdu in hdulist:
             hdu._close()
@@ -853,7 +836,6 @@ def _extract_number(value, default):
     Attempts to extract an integer number from the given value. If the
     extraction fails, the value of the 'default' argument is returned.
     """
-
     try:
         # The _str_to_num method converts the value to string/float
         # so we need to perform one additional conversion to int on top
@@ -879,8 +861,7 @@ def get_testdata_filepath(filename):
     filepath : str
         The path to the requested file.
     """
-    return data.get_pkg_data_filename(
-        f'io/fits/tests/data/{filename}', 'astropy')
+    return data.get_pkg_data_filename(f"io/fits/tests/data/{filename}", "astropy")
 
 
 def _rstrip_inplace(array):
@@ -889,7 +870,6 @@ def _rstrip_inplace(array):
     since the built-in `np.char.rstrip` in Numpy does not perform an in-place
     calculation.
     """
-
     # The following implementation convert the string to unsigned integers of
     # the right length. Trailing spaces (which are represented as 32) are then
     # converted to null characters (represented as zeros). To avoid creating
@@ -900,11 +880,11 @@ def _rstrip_inplace(array):
 
     dt = array.dtype
 
-    if dt.kind not in 'SU':
+    if dt.kind not in "SU":
         raise TypeError("This function can only be used on string arrays")
     # View the array as appropriate integers. The last dimension will
     # equal the number of characters in each string.
-    bpc = 1 if dt.kind == 'S' else 4
+    bpc = 1 if dt.kind == "S" else 4
     dt_int = f"({dt.itemsize // bpc},){dt.byteorder}u{bpc}"
     b = array.view(dt_int, np.ndarray)
     # For optimal speed, work in chunks of the internal ufunc buffer size.
@@ -917,7 +897,7 @@ def _rstrip_inplace(array):
         except AttributeError:  # can occur for non-contiguous arrays
             pass
     for j in range(0, b.shape[0], bufsize):
-        c = b[j:j + bufsize]
+        c = b[j : j + bufsize]
         # Mask which will tell whether we're in a sequence of trailing spaces.
         mask = np.ones(c.shape[:-1], dtype=bool)
         # Loop over the characters in the strings, in reverse order. We process
@@ -939,7 +919,7 @@ def _is_dask_array(data):
     We avoid importing dask unless it is likely it is a dask array,
     so that non-dask code is not slowed down.
     """
-    if not hasattr(data, 'compute'):
+    if not hasattr(data, "compute"):
         return False
 
     try:

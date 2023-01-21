@@ -28,36 +28,36 @@ from .utils import _to_orig_unit, _to_radian
 # List of tuples of the form
 # (long class name without suffix, short WCSLIB projection code):
 _PROJ_NAME_CODE = [
-    ('ZenithalPerspective', 'AZP'),
-    ('SlantZenithalPerspective', 'SZP'),
-    ('Gnomonic', 'TAN'),
-    ('Stereographic', 'STG'),
-    ('SlantOrthographic', 'SIN'),
-    ('ZenithalEquidistant', 'ARC'),
-    ('ZenithalEqualArea', 'ZEA'),
-    ('Airy', 'AIR'),
-    ('CylindricalPerspective', 'CYP'),
-    ('CylindricalEqualArea', 'CEA'),
-    ('PlateCarree', 'CAR'),
-    ('Mercator', 'MER'),
-    ('SansonFlamsteed', 'SFL'),
-    ('Parabolic', 'PAR'),
-    ('Molleweide', 'MOL'),
-    ('HammerAitoff', 'AIT'),
-    ('ConicPerspective', 'COP'),
-    ('ConicEqualArea', 'COE'),
-    ('ConicEquidistant', 'COD'),
-    ('ConicOrthomorphic', 'COO'),
-    ('BonneEqualArea', 'BON'),
-    ('Polyconic', 'PCO'),
-    ('TangentialSphericalCube', 'TSC'),
-    ('COBEQuadSphericalCube', 'CSC'),
-    ('QuadSphericalCube', 'QSC'),
-    ('HEALPix', 'HPX'),
-    ('HEALPixPolar', 'XPH'),
+    ("ZenithalPerspective", "AZP"),
+    ("SlantZenithalPerspective", "SZP"),
+    ("Gnomonic", "TAN"),
+    ("Stereographic", "STG"),
+    ("SlantOrthographic", "SIN"),
+    ("ZenithalEquidistant", "ARC"),
+    ("ZenithalEqualArea", "ZEA"),
+    ("Airy", "AIR"),
+    ("CylindricalPerspective", "CYP"),
+    ("CylindricalEqualArea", "CEA"),
+    ("PlateCarree", "CAR"),
+    ("Mercator", "MER"),
+    ("SansonFlamsteed", "SFL"),
+    ("Parabolic", "PAR"),
+    ("Molleweide", "MOL"),
+    ("HammerAitoff", "AIT"),
+    ("ConicPerspective", "COP"),
+    ("ConicEqualArea", "COE"),
+    ("ConicEquidistant", "COD"),
+    ("ConicOrthomorphic", "COO"),
+    ("BonneEqualArea", "BON"),
+    ("Polyconic", "PCO"),
+    ("TangentialSphericalCube", "TSC"),
+    ("COBEQuadSphericalCube", "CSC"),
+    ("QuadSphericalCube", "QSC"),
+    ("HEALPix", "HPX"),
+    ("HEALPixPolar", "XPH"),
 ]
 
-_NOT_SUPPORTED_PROJ_CODES = ['ZPN']
+_NOT_SUPPORTED_PROJ_CODES = ["ZPN"]
 
 _PROJ_NAME_CODE_MAP = dict(_PROJ_NAME_CODE)
 
@@ -65,10 +65,19 @@ projcodes = [code for _, code in _PROJ_NAME_CODE]
 
 
 __all__ = [
-    'Projection', 'Pix2SkyProjection', 'Sky2PixProjection', 'Zenithal',
-    'Cylindrical', 'PseudoCylindrical', 'Conic', 'PseudoConic', 'QuadCube',
-    'HEALPix', 'AffineTransformation2D', 'projcodes'
-] + list(map('_'.join, product(['Pix2Sky', 'Sky2Pix'], chain(*_PROJ_NAME_CODE))))
+    "Projection",
+    "Pix2SkyProjection",
+    "Sky2PixProjection",
+    "Zenithal",
+    "Cylindrical",
+    "PseudoCylindrical",
+    "Conic",
+    "PseudoConic",
+    "QuadCube",
+    "HEALPix",
+    "AffineTransformation2D",
+    "projcodes",
+] + list(map("_".join, product(["Pix2Sky", "Sky2Pix"], chain(*_PROJ_NAME_CODE))))
 
 
 class _ParameterDS(Parameter):
@@ -82,6 +91,7 @@ class _ParameterDS(Parameter):
     operation) *only as required*.
 
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.dirty = True
@@ -113,7 +123,7 @@ class Projection(Model):
 
     @property
     def prjprm(self):
-        """ WCSLIB ``prjprm`` structure. """
+        """WCSLIB ``prjprm`` structure."""
         self._update_prj()
         return self._prj
 
@@ -128,7 +138,7 @@ class Projection(Model):
 
         .. warning::
             This method assumes that the order in which PVi values (i>0)
-            are to be asigned is identical to the order of model parameters
+            are to be assigned is identical to the order of model parameters
             in ``param_names``. That is, pv[1] = model.parameters[0], ...
 
         """
@@ -159,7 +169,7 @@ class Pix2SkyProjection(Projection):
     _input_units_allow_dimensionless = True
 
     def __new__(cls, *args, **kwargs):
-        long_name = cls.name.split('_')[1]
+        long_name = cls.name.split("_")[1]
         cls.prj_code = _PROJ_NAME_CODE_MAP[long_name]
         return super().__new__(cls)
 
@@ -173,18 +183,16 @@ class Pix2SkyProjection(Projection):
             # with no parameters:
             self._prj.set()
 
-        self.inputs = ('x', 'y')
-        self.outputs = ('phi', 'theta')
+        self.inputs = ("x", "y")
+        self.outputs = ("phi", "theta")
 
     @property
     def input_units(self):
-        return {self.inputs[0]: u.deg,
-                self.inputs[1]: u.deg}
+        return {self.inputs[0]: u.deg, self.inputs[1]: u.deg}
 
     @property
     def return_units(self):
-        return {self.outputs[0]: u.deg,
-                self.outputs[1]: u.deg}
+        return {self.outputs[0]: u.deg, self.outputs[1]: u.deg}
 
     def evaluate(self, x, y, *args, **kwargs):
         self._update_prj()
@@ -206,7 +214,7 @@ class Sky2PixProjection(Projection):
     _input_units_allow_dimensionless = True
 
     def __new__(cls, *args, **kwargs):
-        long_name = cls.name.split('_')[1]
+        long_name = cls.name.split("_")[1]
         cls.prj_code = _PROJ_NAME_CODE_MAP[long_name]
         return super().__new__(cls)
 
@@ -220,18 +228,16 @@ class Sky2PixProjection(Projection):
             # without parameters:
             self._prj.set()
 
-        self.inputs = ('phi', 'theta')
-        self.outputs = ('x', 'y')
+        self.inputs = ("phi", "theta")
+        self.outputs = ("x", "y")
 
     @property
     def input_units(self):
-        return {self.inputs[0]: u.deg,
-                self.inputs[1]: u.deg}
+        return {self.inputs[0]: u.deg, self.inputs[1]: u.deg}
 
     @property
     def return_units(self):
-        return {self.outputs[0]: u.deg,
-                self.outputs[1]: u.deg}
+        return {self.outputs[0]: u.deg, self.outputs[1]: u.deg}
 
     def evaluate(self, phi, theta, *args, **kwargs):
         self._update_prj()
@@ -292,17 +298,23 @@ class Pix2Sky_ZenithalPerspective(Pix2SkyProjection, Zenithal):
         Look angle γ in degrees.  Default is 0°.
 
     """
+
     mu = _ParameterDS(
         default=0.0, description="Distance from point of projection to center of sphere"
     )
-    gamma = _ParameterDS(default=0.0, getter=_to_orig_unit, setter=_to_radian,
-                         description="Look angle γ in degrees (Default = 0°)")
+    gamma = _ParameterDS(
+        default=0.0,
+        getter=_to_orig_unit,
+        setter=_to_radian,
+        description="Look angle γ in degrees (Default = 0°)",
+    )
 
     @mu.validator
     def mu(self, value):
         if np.any(np.equal(value, -1.0)):
             raise InputParameterError(
-                "Zenithal perspective projection is not defined for mu = -1")
+                "Zenithal perspective projection is not defined for mu = -1"
+            )
 
 
 class Sky2Pix_ZenithalPerspective(Sky2PixProjection, Zenithal):
@@ -331,18 +343,23 @@ class Sky2Pix_ZenithalPerspective(Sky2PixProjection, Zenithal):
         Look angle γ in degrees. Default is 0°.
 
     """
+
     mu = _ParameterDS(
-        default=0.0,
-        description="Distance from point of projection to center of sphere"
+        default=0.0, description="Distance from point of projection to center of sphere"
     )
-    gamma = _ParameterDS(default=0.0, getter=_to_orig_unit, setter=_to_radian,
-                         description="Look angle γ in degrees (Default=0°)")
+    gamma = _ParameterDS(
+        default=0.0,
+        getter=_to_orig_unit,
+        setter=_to_radian,
+        description="Look angle γ in degrees (Default=0°)",
+    )
 
     @mu.validator
     def mu(self, value):
         if np.any(np.equal(value, -1.0)):
             raise InputParameterError(
-                "Zenithal perspective projection is not defined for mu = -1")
+                "Zenithal perspective projection is not defined for mu = -1"
+            )
 
 
 class Pix2Sky_SlantZenithalPerspective(Pix2SkyProjection, Zenithal):
@@ -366,24 +383,29 @@ class Pix2Sky_SlantZenithalPerspective(Pix2SkyProjection, Zenithal):
         is 90°.
 
     """
+
     mu = _ParameterDS(
-        default=0.0,
-        description="Distance from point of projection to center of sphere"
+        default=0.0, description="Distance from point of projection to center of sphere"
     )
     phi0 = _ParameterDS(
-        default=0.0, getter=_to_orig_unit, setter=_to_radian,
-        description="The longitude φ₀ of the reference point in degrees (Default=0°)"
+        default=0.0,
+        getter=_to_orig_unit,
+        setter=_to_radian,
+        description="The longitude φ₀ of the reference point in degrees (Default=0°)",
     )
     theta0 = _ParameterDS(
-        default=90.0, getter=_to_orig_unit, setter=_to_radian,
-        description="The latitude θ₀ of the reference point, in degrees (Default=0°)"
+        default=90.0,
+        getter=_to_orig_unit,
+        setter=_to_radian,
+        description="The latitude θ₀ of the reference point, in degrees (Default=0°)",
     )
 
     @mu.validator
     def mu(self, value):
         if np.any(np.equal(value, -1.0)):
             raise InputParameterError(
-                "Zenithal perspective projection is not defined for mu = -1")
+                "Zenithal perspective projection is not defined for mu = -1"
+            )
 
 
 class Sky2Pix_SlantZenithalPerspective(Sky2PixProjection, Zenithal):
@@ -407,23 +429,29 @@ class Sky2Pix_SlantZenithalPerspective(Sky2PixProjection, Zenithal):
         is 90°.
 
     """
+
     mu = _ParameterDS(
         default=0.0, description="Distance from point of projection to center of sphere"
     )
     phi0 = _ParameterDS(
-        default=0.0, getter=_to_orig_unit, setter=_to_radian,
-        description="The longitude φ₀ of the reference point in degrees"
+        default=0.0,
+        getter=_to_orig_unit,
+        setter=_to_radian,
+        description="The longitude φ₀ of the reference point in degrees",
     )
     theta0 = _ParameterDS(
-        default=0.0, getter=_to_orig_unit, setter=_to_radian,
-        description="The latitude θ₀ of the reference point, in degrees"
+        default=0.0,
+        getter=_to_orig_unit,
+        setter=_to_radian,
+        description="The latitude θ₀ of the reference point, in degrees",
     )
 
     @mu.validator
     def mu(self, value):
         if np.any(np.equal(value, -1.0)):
             raise InputParameterError(
-                "Zenithal perspective projection is not defined for mu = -1")
+                "Zenithal perspective projection is not defined for mu = -1"
+            )
 
 
 class Pix2Sky_Gnomonic(Pix2SkyProjection, Zenithal):
@@ -508,6 +536,7 @@ class Pix2Sky_SlantOrthographic(Pix2SkyProjection, Zenithal):
         Obliqueness parameter, η.  Default is 0.0.
 
     """
+
     xi = _ParameterDS(default=0.0, description="Obliqueness parameter")
     eta = _ParameterDS(default=0.0, description="Obliqueness parameter")
 
@@ -533,6 +562,7 @@ class Sky2Pix_SlantOrthographic(Sky2PixProjection, Zenithal):
         y &= \frac{180^\circ}{\pi}[\cos \theta \cos \phi + \eta(1 - \sin \theta)]
 
     """
+
     xi = _ParameterDS(default=0.0)
     eta = _ParameterDS(default=0.0)
 
@@ -604,6 +634,7 @@ class Pix2Sky_Airy(Pix2SkyProjection, Zenithal):
         The latitude :math:`\theta_b` at which to minimize the error,
         in degrees.  Default is 90°.
     """
+
     theta_b = _ParameterDS(default=90.0)
 
 
@@ -632,8 +663,11 @@ class Sky2Pix_Airy(Sky2PixProjection, Zenithal):
         in degrees.  Default is 90°.
 
     """
-    theta_b = _ParameterDS(default=90.0,
-                           description="The latitude at which to minimize the error,in degrees")
+
+    theta_b = _ParameterDS(
+        default=90.0,
+        description="The latitude at which to minimize the error,in degrees",
+    )
 
 
 class Cylindrical(Projection):
@@ -642,6 +676,7 @@ class Cylindrical(Projection):
     Cylindrical projections are so-named because the surface of
     projection is a cylinder.
     """
+
     _separable = True
 
 
@@ -670,20 +705,19 @@ class Pix2Sky_CylindricalPerspective(Pix2SkyProjection, Cylindrical):
         Radius of the cylinder in spherical radii, λ. Default is 1.
 
     """
+
     mu = _ParameterDS(default=1.0)
     lam = _ParameterDS(default=1.0)
 
     @mu.validator
     def mu(self, value):
         if np.any(value == -self.lam):
-            raise InputParameterError(
-                "CYP projection is not defined for mu = -lambda")
+            raise InputParameterError("CYP projection is not defined for mu = -lambda")
 
     @lam.validator
     def lam(self, value):
         if np.any(value == -self.mu):
-            raise InputParameterError(
-                "CYP projection is not defined for lambda = -mu")
+            raise InputParameterError("CYP projection is not defined for lambda = -mu")
 
 
 class Sky2Pix_CylindricalPerspective(Sky2PixProjection, Cylindrical):
@@ -706,20 +740,23 @@ class Sky2Pix_CylindricalPerspective(Sky2PixProjection, Cylindrical):
         Radius of the cylinder in spherical radii, λ.  Default is 0.
 
     """
-    mu = _ParameterDS(default=1.0, description="Distance from center of sphere in spherical radii")
-    lam = _ParameterDS(default=1.0, description="Radius of the cylinder in spherical radii")
+
+    mu = _ParameterDS(
+        default=1.0, description="Distance from center of sphere in spherical radii"
+    )
+    lam = _ParameterDS(
+        default=1.0, description="Radius of the cylinder in spherical radii"
+    )
 
     @mu.validator
     def mu(self, value):
         if np.any(value == -self.lam):
-            raise InputParameterError(
-                "CYP projection is not defined for mu = -lambda")
+            raise InputParameterError("CYP projection is not defined for mu = -lambda")
 
     @lam.validator
     def lam(self, value):
         if np.any(value == -self.mu):
-            raise InputParameterError(
-                "CYP projection is not defined for lambda = -mu")
+            raise InputParameterError("CYP projection is not defined for lambda = -mu")
 
 
 class Pix2Sky_CylindricalEqualArea(Pix2SkyProjection, Cylindrical):
@@ -737,6 +774,7 @@ class Pix2Sky_CylindricalEqualArea(Pix2SkyProjection, Cylindrical):
     lam : float
         Radius of the cylinder in spherical radii, λ.  Default is 1.
     """
+
     lam = _ParameterDS(default=1)
 
 
@@ -755,6 +793,7 @@ class Sky2Pix_CylindricalEqualArea(Sky2PixProjection, Cylindrical):
     lam : float
         Radius of the cylinder in spherical radii, λ.  Default is 0.
     """
+
     lam = _ParameterDS(default=1)
 
 
@@ -828,6 +867,7 @@ class PseudoCylindrical(Projection):
     lengths toward the polar regions in order to reduce lateral
     distortion there.  Consequently, the meridians are curved.
     """
+
     _separable = True
 
 
@@ -966,6 +1006,7 @@ class Conic(Projection):
     .. math::
         C = \frac{180^\circ \cos \theta}{\pi R_\theta}
     """
+
     sigma = _ParameterDS(default=90.0, getter=_to_orig_unit, setter=_to_radian)
     delta = _ParameterDS(default=0.0, getter=_to_orig_unit, setter=_to_radian)
 
@@ -1268,6 +1309,7 @@ class Pix2Sky_BonneEqualArea(Pix2SkyProjection, PseudoConic):
     theta1 : float
         Bonne conformal latitude, in degrees.
     """
+
     _separable = True
 
     theta1 = _ParameterDS(default=0.0, getter=_to_orig_unit, setter=_to_radian)
@@ -1295,10 +1337,15 @@ class Sky2Pix_BonneEqualArea(Sky2PixProjection, PseudoConic):
     theta1 : float
         Bonne conformal latitude, in degrees.
     """
+
     _separable = True
 
-    theta1 = _ParameterDS(default=0.0, getter=_to_orig_unit, setter=_to_radian,
-                          description="Bonne conformal latitude, in degrees")
+    theta1 = _ParameterDS(
+        default=0.0,
+        getter=_to_orig_unit,
+        setter=_to_radian,
+        description="Bonne conformal latitude, in degrees",
+    )
 
 
 class Pix2Sky_Polyconic(Pix2SkyProjection, PseudoConic):
@@ -1383,8 +1430,7 @@ class Sky2Pix_QuadSphericalCube(Sky2PixProjection, QuadCube):
 
 
 class HEALPix(Projection):
-    r"""Base class for HEALPix projections.
-    """
+    r"""Base class for HEALPix projections."""
 
 
 class Pix2Sky_HEALPix(Pix2SkyProjection, HEALPix):
@@ -1402,10 +1448,15 @@ class Pix2Sky_HEALPix(Pix2SkyProjection, HEALPix):
         The number of facets in latitude direction.
 
     """
+
     _separable = True
 
-    H = _ParameterDS(default=4.0, description="The number of facets in longitude direction.")
-    X = _ParameterDS(default=3.0, description="The number of facets in latitude direction.")
+    H = _ParameterDS(
+        default=4.0, description="The number of facets in longitude direction."
+    )
+    X = _ParameterDS(
+        default=3.0, description="The number of facets in latitude direction."
+    )
 
 
 class Sky2Pix_HEALPix(Sky2PixProjection, HEALPix):
@@ -1423,10 +1474,15 @@ class Sky2Pix_HEALPix(Sky2PixProjection, HEALPix):
         The number of facets in latitude direction.
 
     """
+
     _separable = True
 
-    H = _ParameterDS(default=4.0, description="The number of facets in longitude direction.")
-    X = _ParameterDS(default=3.0, description="The number of facets in latitude direction.")
+    H = _ParameterDS(
+        default=4.0, description="The number of facets in longitude direction."
+    )
+    X = _ParameterDS(
+        default=3.0, description="The number of facets in latitude direction."
+    )
 
 
 class Pix2Sky_HEALPixPolar(Pix2SkyProjection, HEALPix):
@@ -1460,6 +1516,7 @@ class AffineTransformation2D(Model):
         translation to apply to the inputs
 
     """
+
     n_inputs = 2
     n_outputs = 2
 
@@ -1473,10 +1530,10 @@ class AffineTransformation2D(Model):
     @matrix.validator
     def matrix(self, value):
         """Validates that the input matrix is a 2x2 2D array."""
-
         if np.shape(value) != (2, 2):
             raise InputParameterError(
-                "Expected transformation matrix to be a 2x2 array")
+                "Expected transformation matrix to be a 2x2 array"
+            )
 
     @translation.validator
     def translation(self, value):
@@ -1485,12 +1542,14 @@ class AffineTransformation2D(Model):
         either a "row" vector or a "column" vector where in the latter case the
         resultant Numpy array has ``ndim=2`` but the shape is ``(1, 2)``.
         """
-
-        if not ((np.ndim(value) == 1 and np.shape(value) == (2,)) or
-                (np.ndim(value) == 2 and np.shape(value) == (1, 2))):
+        if not (
+            (np.ndim(value) == 1 and np.shape(value) == (2,))
+            or (np.ndim(value) == 2 and np.shape(value) == (1, 2))
+        ):
             raise InputParameterError(
                 "Expected translation vector to be a 2 element row or column "
-                "vector array")
+                "vector array"
+            )
 
     def __init__(self, matrix=matrix, translation=translation, **kwargs):
         super().__init__(matrix=matrix, translation=translation, **kwargs)
@@ -1504,13 +1563,13 @@ class AffineTransformation2D(Model):
 
         Raises `~astropy.modeling.InputParameterError` if the transformation cannot be inverted.
         """
-
         det = np.linalg.det(self.matrix.value)
 
         if det == 0:
             raise InputParameterError(
-                f"Transformation matrix is singular; {self.__class__.__name__} model does not "
-                "have an inverse")
+                f"Transformation matrix is singular; {self.__class__.__name__} model"
+                " does not have an inverse"
+            )
 
         matrix = np.linalg.inv(self.matrix.value)
         if self.matrix.unit is not None:
@@ -1536,9 +1595,9 @@ class AffineTransformation2D(Model):
 
         shape = x.shape or (1,)
         # Use asarray to ensure loose the units.
-        inarr = np.vstack([np.asarray(x).ravel(),
-                           np.asarray(y).ravel(),
-                           np.ones(x.size, x.dtype)])
+        inarr = np.vstack(
+            [np.asarray(x).ravel(), np.asarray(y).ravel(), np.ones(x.size, x.dtype)]
+        )
 
         if inarr.shape[0] != 3 or inarr.ndim != 2:
             raise ValueError("Incompatible input shapes")
@@ -1553,10 +1612,12 @@ class AffineTransformation2D(Model):
     @staticmethod
     def _create_augmented_matrix(matrix, translation):
         unit = None
-        if any([hasattr(translation, 'unit'), hasattr(matrix, 'unit')]):
-            if not all([hasattr(translation, 'unit'), hasattr(matrix, 'unit')]):
-                raise ValueError("To use AffineTransformation with quantities, "
-                                 "both matrix and unit need to be quantities.")
+        if any([hasattr(translation, "unit"), hasattr(matrix, "unit")]):
+            if not all([hasattr(translation, "unit"), hasattr(matrix, "unit")]):
+                raise ValueError(
+                    "To use AffineTransformation with quantities, "
+                    "both matrix and unit need to be quantities."
+                )
             unit = translation.unit
             # matrix should have the same units as translation
             if not (matrix.unit / translation.unit) == u.dimensionless_unscaled:
@@ -1582,8 +1643,8 @@ class AffineTransformation2D(Model):
 
 for long_name, short_name in _PROJ_NAME_CODE:
     # define short-name projection equivalent classes:
-    globals()['Pix2Sky_' + short_name] = globals()['Pix2Sky_' + long_name]
-    globals()['Sky2Pix_' + short_name] = globals()['Sky2Pix_' + long_name]
+    globals()["Pix2Sky_" + short_name] = globals()["Pix2Sky_" + long_name]
+    globals()["Sky2Pix_" + short_name] = globals()["Sky2Pix_" + long_name]
     # set inverse classes:
-    globals()['Pix2Sky_' + long_name]._inv_cls = globals()['Sky2Pix_' + long_name]
-    globals()['Sky2Pix_' + long_name]._inv_cls = globals()['Pix2Sky_' + long_name]
+    globals()["Pix2Sky_" + long_name]._inv_cls = globals()["Sky2Pix_" + long_name]
+    globals()["Sky2Pix_" + long_name]._inv_cls = globals()["Pix2Sky_" + long_name]

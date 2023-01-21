@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 """
-Methods for selecting the bin width of histograms
+Methods for selecting the bin width of histograms.
 
 Ported from the astroML project: https://www.astroml.org/
 """
@@ -10,8 +10,13 @@ import numpy as np
 
 from .bayesian_blocks import bayesian_blocks
 
-__all__ = ['histogram', 'scott_bin_width', 'freedman_bin_width',
-           'knuth_bin_width', 'calculate_bin_edges']
+__all__ = [
+    "histogram",
+    "scott_bin_width",
+    "freedman_bin_width",
+    "knuth_bin_width",
+    "calculate_bin_edges",
+]
 
 
 def calculate_bin_edges(a, bins=10, range=None, weights=None):
@@ -53,16 +58,17 @@ def calculate_bin_edges(a, bins=10, range=None, weights=None):
         # TODO: if weights is specified, we need to modify things.
         #       e.g. we could use point measures fitness for Bayesian blocks
         if weights is not None:
-            raise NotImplementedError("weights are not yet supported "
-                                      "for the enhanced histogram")
+            raise NotImplementedError(
+                "weights are not yet supported for the enhanced histogram"
+            )
 
-        if bins == 'blocks':
+        if bins == "blocks":
             bins = bayesian_blocks(a)
-        elif bins == 'knuth':
+        elif bins == "knuth":
             da, bins = knuth_bin_width(a, True)
-        elif bins == 'scott':
+        elif bins == "scott":
             da, bins = scott_bin_width(a, True)
-        elif bins == 'freedman':
+        elif bins == "freedman":
             da, bins = freedman_bin_width(a, True)
         else:
             raise ValueError(f"unrecognized bin code: '{bins}'")
@@ -85,7 +91,7 @@ def calculate_bin_edges(a, bins=10, range=None, weights=None):
 
 
 def histogram(a, bins=10, range=None, weights=None, **kwargs):
-    """Enhanced histogram function, providing adaptive binnings
+    """Enhanced histogram function, providing adaptive binnings.
 
     This is a histogram function that enables the use of more sophisticated
     algorithms for determining bins.  Aside from the ``bins`` argument allowing
@@ -132,14 +138,13 @@ def histogram(a, bins=10, range=None, weights=None, **kwargs):
     --------
     numpy.histogram
     """
-
     bins = calculate_bin_edges(a, bins=bins, range=range, weights=weights)
     # Now we call numpy's histogram with the resulting bin edges
     return np.histogram(a, bins=bins, range=range, weights=weights, **kwargs)
 
 
 def scott_bin_width(data, return_bins=False):
-    r"""Return the optimal histogram bin width using Scott's rule
+    r"""Return the optimal histogram bin width using Scott's rule.
 
     Scott's rule is a normal reference rule: it minimizes the integrated
     mean squared error in the bin approximation under the assumption that the
@@ -200,7 +205,7 @@ def scott_bin_width(data, return_bins=False):
 
 
 def freedman_bin_width(data, return_bins=False):
-    r"""Return the optimal histogram bin width using the Freedman-Diaconis rule
+    r"""Return the optimal histogram bin width using the Freedman-Diaconis rule.
 
     The Freedman-Diaconis rule is a normal reference rule like Scott's
     rule, but uses rank-based statistics for results which are more robust
@@ -260,12 +265,13 @@ def freedman_bin_width(data, return_bins=False):
         try:
             bins = dmin + dx * np.arange(Nbins + 1)
         except ValueError as e:
-            if 'Maximum allowed size exceeded' in str(e):
+            if "Maximum allowed size exceeded" in str(e):
                 raise ValueError(
-                    'The inter-quartile range of the data is too small: '
-                    'failed to construct histogram with {} bins. '
-                    'Please use another bin method, such as '
-                    'bins="scott"'.format(Nbins + 1))
+                    "The inter-quartile range of the data is too small: "
+                    f"failed to construct histogram with {Nbins + 1} bins. "
+                    "Please use another bin method, such as "
+                    'bins="scott"'
+                )
             else:  # Something else  # pragma: no cover
                 raise
         return dx, bins
@@ -337,7 +343,7 @@ def knuth_bin_width(data, return_bins=False, quiet=True):
 
 
 class _KnuthF:
-    r"""Class which implements the function minimized by knuth_bin_width
+    r"""Class which implements the function minimized by knuth_bin_width.
 
     Parameters
     ----------
@@ -361,6 +367,7 @@ class _KnuthF:
     --------
     knuth_bin_width
     """
+
     def __init__(self, data):
         self.data = np.array(data, copy=True)
         if self.data.ndim != 1:
@@ -377,14 +384,14 @@ class _KnuthF:
         self.gammaln = special.gammaln
 
     def bins(self, M):
-        """Return the bin edges given M number of bins"""
+        """Return the bin edges given M number of bins."""
         return np.linspace(self.data[0], self.data[-1], int(M) + 1)
 
     def __call__(self, M):
         return self.eval(M)
 
     def eval(self, M):
-        """Evaluate the Knuth function
+        """Evaluate the Knuth function.
 
         Parameters
         ----------
@@ -405,8 +412,10 @@ class _KnuthF:
         bins = self.bins(M)
         nk, bins = np.histogram(self.data, bins)
 
-        return -(self.n * np.log(M) +
-                 self.gammaln(0.5 * M) -
-                 M * self.gammaln(0.5) -
-                 self.gammaln(self.n + 0.5 * M) +
-                 np.sum(self.gammaln(nk + 0.5)))
+        return -(
+            self.n * np.log(M)
+            + self.gammaln(0.5 * M)
+            - M * self.gammaln(0.5)
+            - self.gammaln(self.n + 0.5 * M)
+            + np.sum(self.gammaln(nk + 0.5))
+        )

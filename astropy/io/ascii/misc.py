@@ -13,17 +13,18 @@ import operator
 
 
 def first_true_index(iterable, pred=None, default=None):
-    """find the first index position for the which the callable pred returns True"""
+    """find the first index position for the which the callable pred returns True."""
     if pred is None:
         func = operator.itemgetter(1)
     else:
         func = lambda x: pred(x[1])
-    ii = next(filter(func, enumerate(iterable)), default)  # either index-item pair or default
+    # either index-item pair or default
+    ii = next(filter(func, enumerate(iterable)), default)
     return ii[0] if ii else default
 
 
 def first_false_index(iterable, pred=None, default=None):
-    """find the first index position for the which the callable pred returns False"""
+    """find the first index position for the which the callable pred returns False."""
     if pred is None:
         func = operator.not_
     else:
@@ -79,24 +80,24 @@ def sortmore(*args, **kw):
         Out[2]: (['a', 'a', 'C', 'c', 'e', 'h', 'r', 'r', 'S', 't'],
                  [2, 4, 0, 5, 7, 1, 3, 8, 9, 6])
     """
-
     first = list(args[0])
     if not len(first):
         return args
 
-    globalkey = kw.get('globalkey')
-    key = kw.get('key')
+    globalkey = kw.get("globalkey")
+    key = kw.get("key")
     if key is None:
         if globalkey:
             # if global sort function given and no local (secondary) key given, ==> no tiebreakers
             key = lambda x: 0
         else:
-            key = lambda x: x  # if no global sort and no local sort keys given, sort by item values
+            # if no global sort and no local sort keys given, sort by item values
+            key = lambda x: x
     if globalkey is None:
         globalkey = lambda *x: 0
 
     if not isinstance(globalkey, collections.abc.Callable):
-        raise ValueError('globalkey needs to be callable')
+        raise ValueError("globalkey needs to be callable")
 
     if isinstance(key, collections.abc.Callable):
         k = lambda x: (globalkey(*x), key(x[0]))
@@ -105,12 +106,14 @@ def sortmore(*args, **kw):
         k = lambda x: (globalkey(*x),) + tuple(f(z) for (f, z) in zip(key, x))
     else:
         raise KeyError(
-            "kw arg 'key' should be None, callable, or a sequence of callables, not {}"
-            .format(type(key)))
+            "kw arg 'key' should be None, callable, or a sequence of callables, not {}".format(
+                type(key)
+            )
+        )
 
     res = sorted(list(zip(*args)), key=k)
-    if 'order' in kw:
-        if kw['order'].startswith(('descend', 'reverse')):
+    if "order" in kw:
+        if kw["order"].startswith(("descend", "reverse")):
             res = reversed(res)
 
     return tuple(map(list, zip(*res)))

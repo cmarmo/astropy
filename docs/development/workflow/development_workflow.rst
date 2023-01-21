@@ -46,10 +46,7 @@ Some `git`_ resources
 =====================
 
 If you have never used git or have limited experience with it, take a few
-minutes to look at these resources:
-
-* `Interactive tutorial`_ that runs in a browser
-* `Git Basics`_, part of a much longer `git book`_.
+minutes to look at `Git Basics`_, part of a much longer `git book`_.
 
 In practice, you need only a handful of `git`_ commands to make contributions
 to Astropy. There is a more extensive list of :ref:`git-resources` if you
@@ -164,8 +161,7 @@ when you make a git commit using our provided `pre-commit hook <https://pre-comm
 for git, for more information see
 `git hooks <https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks#_git_hooks>`_.
 We encourage you to setup and use these hooks to ensure that your code always meets
-our coding style standards. This can be done by installing ``pre-commit`` in the root
-of your astropy repository by running::
+our coding style standards. The easiest way to do this is by installing ``pre-commit``::
 
     pip install pre-commit
 
@@ -173,7 +169,8 @@ Or if you prefer `conda`_::
 
     conda install pre-commit
 
-Followed by::
+This next command needs be done by installing ``pre-commit`` in the **root**
+of your astropy repository by running::
 
     pre-commit install
 
@@ -196,6 +193,10 @@ If you do not want to use ``pre-commit`` as part of your git workflow, you can
 still run the checks manually (see, :ref:`code-style`) using::
 
   tox -e codestyle
+
+Or this will run whether you did ``pre-commit install`` or not::
+
+  pre-commit run
 
 Again, this will automatically apply the necessary changes to your code if possible.
 
@@ -504,6 +505,7 @@ it into Astropy:
    the maintainers know that your work is not ready for a full review nor to be
    merged yet. In addition, if your commits are not ready for CI testing, you
    should also use ``[ci skip]`` or ``[skip ci]`` directive in your commit message.
+   For usage of pre-commit hooks and directives, see :ref:`pre-commit` and :ref:`pre-commit_bot`.
 
 .. _revise and push:
 
@@ -634,7 +636,6 @@ can delete any backup branches that may have been created::
 
 .. include:: links.inc
 
-.. _Interactive tutorial: https://lab.github.com/
 .. _Git Basics: https://git-scm.com/book/en/Getting-Started-Git-Basics
 .. _git book: https://git-scm.com/book/
 .. _Astropy issue list: https://github.com/astropy/astropy/issues

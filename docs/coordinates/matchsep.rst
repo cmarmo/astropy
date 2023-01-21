@@ -135,7 +135,7 @@ offset location::
 -------------------
 
 To extend the concept of spherical offsets, `~astropy.coordinates` has
-a frame class :class:`~astropy.coordinates.builtin_frames.skyoffset.SkyOffsetFrame`
+a frame class :class:`~astropy.coordinates.SkyOffsetFrame`
 which creates distinct frames that are centered on a specific point.
 These are known as "sky offset frames," as they are a convenient way to create
 a frame centered on an arbitrary position on the sky suitable for computing
@@ -170,7 +170,7 @@ offset frame from an existing |SkyCoord|::
         (10., 45.)>): (lon, lat) in deg
         (-0.71943945, -0.99556216)>
 
-.. note ::
+.. note::
 
     While sky offset frames *appear* to be all the same class, this not the
     case: the sky offset frame for each different type of frame for ``origin`` is
@@ -198,7 +198,7 @@ frame aligned with standard ICRA RA/Dec, but on M31::
 .. note::
 
     Currently, distance information in the ``origin`` of a
-    :class:`~astropy.coordinates.builtin_frames.skyoffset.SkyOffsetFrame` is not
+    :class:`~astropy.coordinates.SkyOffsetFrame` is not
     used to compute any part of the transform. The ``origin`` is only used for
     on-sky rotation. This may change in the future, however.
 

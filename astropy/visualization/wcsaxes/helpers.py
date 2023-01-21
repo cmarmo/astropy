@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 """
-Helpers functions for different kinds of WCSAxes instances
+Helpers functions for different kinds of WCSAxes instances.
 """
 
 import numpy as np
@@ -10,7 +10,7 @@ from mpl_toolkits.axes_grid1.anchored_artists import AnchoredEllipse, AnchoredSi
 import astropy.units as u
 from astropy.wcs.utils import proj_plane_pixel_scales
 
-__all__ = ['add_beam', 'add_scalebar']
+__all__ = ["add_beam", "add_scalebar"]
 
 CORNERS = {
     "top right": 1,
@@ -37,7 +37,7 @@ def add_beam(
     **kwargs,
 ):
     """
-    Display the beam shape and size
+    Display the beam shape and size.
 
     Parameters
     ----------
@@ -79,9 +79,10 @@ def add_beam(
       (e.g., rectangular pixels)
 
     """
-
     if header and major:
-        raise ValueError("Either header or major/minor/angle must be specified, not both.")
+        raise ValueError(
+            "Either header or major/minor/angle must be specified, not both."
+        )
 
     if header:
         major = header["BMAJ"]
@@ -135,7 +136,7 @@ def add_scalebar(
     pad=0.5,
     **kwargs,
 ):
-    """Add a scale bar
+    """Add a scale bar.
 
     Parameters
     ----------
@@ -143,7 +144,7 @@ def add_scalebar(
         WCSAxes instance in which the scale bar is displayed. The WCS must be
         celestial.
     length : float or :class:`~astropy.units.Quantity`
-        The lenght of the scalebar in degrees or an angular quantity
+        The length of the scalebar in degrees or an angular quantity
     label : str, optional
         Label to place below the scale bar
     corner : str, optional
@@ -171,7 +172,6 @@ def add_scalebar(
       (e.g., rectangular pixels)
 
     """
-
     if isinstance(length, u.Quantity):
         length = length.to(u.degree).value
 

@@ -3,7 +3,7 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: check-added-large-files
         # Prevent giant files from being committed.
@@ -38,7 +38,7 @@ repos:
         exclude: ".*(data.*|extern.*|licenses.*|_parsetab.py|test_cds.py)$"
 
   - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.9.0
+    rev: v1.10.0
     hooks:
       - id: python-check-mock-methods
         # Prevent common mistakes of assert mck.not_called(), assert
@@ -53,19 +53,23 @@ repos:
         # Enforce that all noqa annotations always occur with specific codes.
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.2.0
+    rev: v3.3.1
     hooks:
       - id: pyupgrade
         args: ["--py38-plus"]
         exclude: ".*(extern.*|_parsetab.py|_lextab.py)$"
 
-  - repo: https://github.com/asottile/yesqa
-    rev: v1.4.0
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.2
     hooks:
-      - id: yesqa
+      - id: codespell
+        args: ["--write-changes"]
+        additional_dependencies:
+          - tomli
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.10.1
+    rev: 5.11.4
     hooks:
       - id: isort
         name: isort (python)
@@ -80,40 +84,15 @@ repos:
         additional_dependencies: [toml]
 
   - repo: https://github.com/psf/black
-    rev: 22.10.0
+    rev: 22.12.0
     hooks:
       - id: black
 
-  # We list the warnings/errors to check for here rather than in setup.cfg because
-  # we don't want these options to apply whenever anyone calls flake8 from the
-  # command-line or their code editor - in this case all warnings/errors should be
-  # checked for. The warnings/errors we check for here are:
-  # E101 - mix of tabs and spaces
-  # E111 - 4 spaces per indentation level
-  # E112 - 4 spaces per indentation level
-  # E113 - 4 spaces per indentation level
-  # E201 - whitespace after '('
-  # E202 - whitespace before ')'
-  # E27 - spaces and tabs after
-  # E3 - Blank line
-  # E502 - the backslash is redundant between brackets
-  # E70 - multiple statements on a line
-  # E9 - Runtime
-  # F - Flake8 Errors
-  # W - Whitespace
-  - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.223"
     hooks:
-      - id: flake8
-        args:
-          [
-            "--count",
-            "--select",
-            "E10,E11,E201,E202,E27,E3,E5,E70,E722,E9,F,W",
-            "--ignore",
-            "E114,E116,E501,F403,F821,F841,W5"
-          ]
-        exclude: ".*(data.*|extern.*|cextern)$"
+      - id: ruff
+        args: ["--fix", "--force-exclude"]
 
   - repo: local
     hooks:

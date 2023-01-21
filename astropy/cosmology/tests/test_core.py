@@ -33,17 +33,20 @@ from .test_parameter import ParameterTestMixin
 
 
 scalar_zs = [
-    0, 1, 1100,  # interesting times
+    0,
+    1,
+    1100,  # interesting times
     # FIXME! np.inf breaks some funcs. 0 * inf is an error
     np.float64(3300),  # different type
-    2 * cu.redshift, 3 * u.one  # compatible units
+    2 * cu.redshift,
+    3 * u.one,  # compatible units
 ]
 _zarr = np.linspace(0, 1e5, num=20)
 array_zs = [
     _zarr,  # numpy
     _zarr.tolist(),  # pure python
     Column(_zarr),  # table-like
-    _zarr * cu.redshift  # Quantity
+    _zarr * cu.redshift,  # Quantity
 ]
 valid_zs = scalar_zs + array_zs
 
@@ -62,7 +65,7 @@ class SubCosmology(Cosmology):
     Tcmb0 = Parameter(unit=u.K)
     m_nu = Parameter(unit=u.eV)
 
-    def __init__(self, H0, Tcmb0=0*u.K, m_nu=0*u.eV, name=None, meta=None):
+    def __init__(self, H0, Tcmb0=0 * u.K, m_nu=0 * u.eV, name=None, meta=None):
         super().__init__(name=name, meta=meta)
         self.H0 = H0
         self.Tcmb0 = Tcmb0
@@ -95,31 +98,23 @@ class MetaTestMixin:
         cosmo.meta[key] = cosmo.meta.pop(key)  # will error if immutable
 
 
-class TestCosmology(ParameterTestMixin, MetaTestMixin,
-                    ReadWriteTestMixin, ToFromFormatTestMixin,
-                    metaclass=abc.ABCMeta):
-    """Test :class:`astropy.cosmology.Cosmology`.
-
-    Subclasses should define tests for:
-
-    - ``test_clone_change_param()``
-    - ``test_repr()``
+class CosmologyTest(
+    ParameterTestMixin,
+    MetaTestMixin,
+    ReadWriteTestMixin,
+    ToFromFormatTestMixin,
+    metaclass=abc.ABCMeta,
+):
+    """
+    Test subclasses of :class:`astropy.cosmology.Cosmology`.
     """
 
+    @abc.abstractmethod
     def setup_class(self):
-        """
-        Setup for testing.
-        Cosmology should not be instantiated, so tests are done on a subclass.
-        """
-        # make sure SubCosmology is known
-        _COSMOLOGY_CLASSES["SubCosmology"] = SubCosmology
-
-        self.cls = SubCosmology
-        self._cls_args = dict(H0=70 * (u.km / u.s / u.Mpc), Tcmb0=2.7 * u.K, m_nu=0.6 * u.eV)
-        self.cls_kwargs = dict(name=self.__class__.__name__, meta={"a": "b"})
+        """Setup for testing."""
 
     def teardown_class(self):
-        _COSMOLOGY_CLASSES.pop("SubCosmology", None)
+        pass
 
     @property
     def cls_args(self):
@@ -152,6 +147,7 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
 
     def test_init_subclass(self, cosmo_cls):
         """Test creating subclasses registers classes and manages Parameters."""
+
         class InitSubclassTest(cosmo_cls):
             pass
 
@@ -173,9 +169,13 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
 
         # test matches __init__, but without 'self'
         sig = inspect.signature(cosmo.__init__)  # (instances don't have self)
-        assert set(sig.parameters.keys()) == set(cosmo._init_signature.parameters.keys())
-        assert all(np.all(sig.parameters[k].default == p.default) for k, p in
-                   cosmo._init_signature.parameters.items())
+        assert set(sig.parameters.keys()) == set(
+            cosmo._init_signature.parameters.keys()
+        )
+        assert all(
+            np.all(sig.parameters[k].default == p.default)
+            for k, p in cosmo._init_signature.parameters.items()
+        )
 
     # ---------------------------------------------------------------
     # instance-level
@@ -198,15 +198,17 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
         assert cosmo.name == self.cls_kwargs["name"]  # test has expected value
 
         # immutable
-        match = ("can't set" if PYTHON_LT_3_11
-                 else f"property 'name' of {cosmo.__class__.__name__!r} object has no setter")
+        match = (
+            "can't set"
+            if PYTHON_LT_3_11
+            else f"property 'name' of {cosmo.__class__.__name__!r} object has no setter"
+        )
         with pytest.raises(AttributeError, match=match):
             cosmo.name = None
 
+    @abc.abstractmethod
     def test_is_flat(self, cosmo_cls, cosmo):
-        """Test property ``is_flat``. It's an ABC."""
-        with pytest.raises(NotImplementedError, match="is_flat is not implemented"):
-            cosmo.is_flat
+        """Test property ``is_flat``."""
 
     # ------------------------------------------------
     # clone
@@ -296,13 +298,13 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
         # class in string rep
         assert cosmo_cls.__qualname__ in r
         assert r.index(cosmo_cls.__qualname__) == 0  # it's the first thing
-        r = r[len(cosmo_cls.__qualname__) + 1:]  # remove
+        r = r[len(cosmo_cls.__qualname__) + 1 :]  # remove
 
         # name in string rep
         if cosmo.name is not None:
-            assert f"name=\"{cosmo.name}\"" in r
+            assert f'name="{cosmo.name}"' in r
             assert r.index("name=") == 0
-            r = r[6 + len(cosmo.name) + 3:]  # remove
+            r = r[6 + len(cosmo.name) + 3 :]  # remove
 
         # parameters in string rep
         ps = {k: getattr(cosmo, k) for k in cosmo.__parameters__}
@@ -310,7 +312,7 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
             sv = f"{k}={v}"
             assert sv in r
             assert r.index(k) == 0
-            r = r[len(sv) + 2:]  # remove
+            r = r[len(sv) + 2 :]  # remove
 
     # ------------------------------------------------
 
@@ -368,26 +370,41 @@ class TestCosmology(ParameterTestMixin, MetaTestMixin,
         assert unpickled.meta == cosmo.meta
 
 
-class CosmologySubclassTest(TestCosmology):
-    """
-    Test subclasses of :class:`astropy.cosmology.Cosmology`.
-    This is broken away from ``TestCosmology``, because |Cosmology| is/will be
-    an ABC and subclasses must override some methods.
+class TestCosmology(CosmologyTest):
+    """Test :class:`astropy.cosmology.Cosmology`.
+
+    Subclasses should define tests for:
+
+    - ``test_clone_change_param()``
+    - ``test_repr()``
     """
 
-    @abc.abstractmethod
     def setup_class(self):
-        """Setup for testing."""
+        """
+        Setup for testing.
+        Cosmology should not be instantiated, so tests are done on a subclass.
+        """
+        # make sure SubCosmology is known
+        _COSMOLOGY_CLASSES["SubCosmology"] = SubCosmology
+
+        self.cls = SubCosmology
+        self._cls_args = dict(
+            H0=70 * (u.km / u.s / u.Mpc), Tcmb0=2.7 * u.K, m_nu=0.6 * u.eV
+        )
+        self.cls_kwargs = dict(name=self.__class__.__name__, meta={"a": "b"})
+
+    def teardown_class(self):
+        """Teardown for testing."""
+        super().teardown_class(self)
+        _COSMOLOGY_CLASSES.pop("SubCosmology", None)
 
     # ===============================================================
     # Method & Attribute Tests
 
-    # ---------------------------------------------------------------
-    # instance-level
-
-    @abc.abstractmethod
     def test_is_flat(self, cosmo_cls, cosmo):
-        """Test property ``is_flat``."""
+        """Test property ``is_flat``. It's an ABC."""
+        with pytest.raises(NotImplementedError, match="is_flat is not implemented"):
+            cosmo.is_flat
 
 
 # -----------------------------------------------------------------------------
@@ -408,8 +425,7 @@ class FlatCosmologyMixinTest:
     """
 
     def test_nonflat_class_(self, cosmo_cls, cosmo):
-        """Test :attr:`astropy.cosmology.core.FlatCosmologyMixin.nonflat_cls`.
-        """
+        """Test :attr:`astropy.cosmology.core.FlatCosmologyMixin.nonflat_cls`."""
         # Test it's a method on the class
         assert issubclass(cosmo_cls, cosmo_cls.__nonflatclass__)
 
@@ -428,8 +444,7 @@ class FlatCosmologyMixinTest:
         assert cosmo.is_flat is True
 
     def test_nonflat(self, cosmo):
-        """Test :attr:`astropy.cosmology.core.FlatCosmologyMixin.nonflat`.
-        """
+        """Test :attr:`astropy.cosmology.core.FlatCosmologyMixin.nonflat`."""
         assert cosmo.nonflat.is_equivalent(cosmo)
         assert cosmo.is_equivalent(cosmo.nonflat)
 
@@ -465,7 +480,7 @@ class FlatCosmologyMixinTest:
         e.g. FlatFLRWMixinTest -> FlatCosmologyMixinTest -> TestCosmology
         vs   FlatFLRWMixinTest -> FlatCosmologyMixinTest -> TestFLRW -> TestCosmology
         """
-        CosmologySubclassTest.test_is_equivalent(self, cosmo)
+        CosmologyTest.test_is_equivalent(self, cosmo)
 
         # See FlatFLRWMixinTest for tests. It's a bit hard here since this class
         # is for an ABC.
@@ -507,8 +522,7 @@ def test__nonflatclass__multiple_nonflat_inheritance():
     """
     # Define a non-operable minimal subclass of Cosmology.
     class SubCosmology2(Cosmology):
-
-        def __init__(self, H0, Tcmb0=0*u.K, m_nu=0*u.eV, name=None, meta=None):
+        def __init__(self, H0, Tcmb0=0 * u.K, m_nu=0 * u.eV, name=None, meta=None):
             super().__init__(name=name, meta=meta)
 
         @property
@@ -519,7 +533,6 @@ def test__nonflatclass__multiple_nonflat_inheritance():
     with pytest.raises(TypeError, match="cannot create a consistent non-flat class"):
 
         class FlatSubCosmology(FlatCosmologyMixin, SubCosmology, SubCosmology2):
-
             @property
             def nonflat(self):
                 pass
