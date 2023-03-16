@@ -1528,7 +1528,6 @@ class ColDefs(NotifierMixin):
         for idx in range(len(array.dtype)):
             cname = array.dtype.names[idx]
             ftype = array.dtype.fields[cname][0]
-            format = self._col_format_cls.from_recformat(ftype)
 
             if ftype.kind == "O":
                 dtypes = {np.array(array[cname][i]).dtype for i in range(len(array))}
