@@ -3338,6 +3338,30 @@ class TestVLATables(FitsTestCase):
         ):
             fits.BinTableHDU.from_columns([c1])
 
+    def test_write_VLA_tables_with_unified(self):
+        """
+        Write VLA objects with the unified I/O interface.
+        See https://github.com/astropy/astropy/issues/11323
+        """
+
+        # Make a FITS table with a variable-length array column
+        a = np.array([45, 30])
+        b = np.array([11, 12, 13])
+        c = np.array([45, 55, 65, 75])
+        var = np.array([a, b, c], dtype=object)
+
+        c1 = fits.Column(name="var", format="PI()", array=var)
+        hdu = fits.BinTableHDU.from_columns([c1])
+        hdu.writeto(self.temp("temp.fits"), overwrite=True)
+
+        tab = Table.read(self.temp("temp.fits"))
+        tab.write(self.temp("temp2.fits"), overwrite=True)
+
+        tab = Table.read(self.temp("temp2.fits"))
+        assert np.array_equal(tab[0]["var"], np.array([45.0, 30.0]))
+        assert np.array_equal(tab[1]["var"], np.array([11.0, 12.0, 13.0]))
+        assert np.array_equal(tab[2]["var"], np.array([45.0, 55.0, 65.0, 75.0]))
+
 
 # These are tests that solely test the Column and ColDefs interfaces and
 # related functionality without directly involving full tables; currently there
