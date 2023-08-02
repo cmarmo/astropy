@@ -30,7 +30,7 @@ env:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    if: (github.repository == 'astropy/astropy' && (github.event_name == 'schedule' || github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'Extra CI')))
+    if: (github.repository == 'cmarmo/astropy' && (github.event_name == 'schedule' || github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'Extra CI')))
     env:
       ARCH_ON_CI: "normal"
     strategy:
@@ -101,7 +101,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     name: Python 3.11
-    if: (github.repository == 'astropy/astropy' && (github.event_name == 'schedule' || github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'Extra CI')))
+    if: (github.repository == 'cmarmo/astropy' && (github.event_name == 'schedule' || github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'Extra CI')))
     env:
       ARCH_ON_CI: ${{ matrix.arch }}
 
@@ -131,9 +131,14 @@ jobs:
             IS_CRON: ${{ env.IS_CRON }}
 
           install: |
+            set -x
+            apt-get update -q -y
+            apt-get install -q -y gnupg2
             # Add test-support repository for wcslib8
-            # Add test-support repository for wcslib8
-            echo "deb [trusted=yes] http://ppa.launchpadcontent.net/astropy/test-support/ubuntu lunar main" > /etc/apt/sources.list.d/test-support.list
+            echo "deb http://ppa.launchpadcontent.net/astropy/test-support/ubuntu lunar main" > /etc/apt/sources.list.d/test-support.list
+            apt-key list
+            gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv CC75F07B3EF41EFC 
+            gpg --export --armor CC75F07B3EF41EFC | apt-key add -
             apt-get update -q -y
             apt-get install -q -y git \
                                   g++ \
