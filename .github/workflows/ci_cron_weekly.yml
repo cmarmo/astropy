@@ -131,7 +131,6 @@ jobs:
             IS_CRON: ${{ env.IS_CRON }}
 
           install: |
-            set -x
             apt-get update -q -y
             apt-get install -q -y gnupg2
             # Add test-support repository for wcslib8
