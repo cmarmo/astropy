@@ -1,6 +1,5 @@
 import gc
 import warnings
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -66,10 +65,10 @@ class TestSingleTable:
         )
 
     def test_path(self, tmp_path):
-        filename = "temp.fits"
+        filename = tmp_path / "temp.fits"
         t1 = Table(self.data)
-        t1.write(filename, overwrite=True)
-        t1.write(Path(filename), format="fits", overwrite=True)
+        t1.write(filename, format="fits", overwrite=True)
+        t1.write(filename, format="fits", overwrite=True)
 
     def test_simple(self, tmp_path):
         filename = tmp_path / "test_simple.fts"
